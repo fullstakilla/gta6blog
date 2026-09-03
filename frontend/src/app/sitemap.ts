@@ -2,6 +2,9 @@ import type { MetadataRoute } from "next";
 import { db } from "@/lib/db";
 import { SITE_URL } from "@/lib/constants";
 
+// force-dynamic — чтобы CI/prerender без DATABASE_URL не падал на build
+export const dynamic = "force-dynamic";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const articles = await db.article.findMany({
     where: { status: "published" },

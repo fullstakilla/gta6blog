@@ -41,7 +41,11 @@ export const metadata: Metadata = {
     url: SITE_URL,
   },
   twitter: { card: "summary_large_image" },
-  alternates: { canonical: "/", languages: { ru: "/" } },
+  alternates: {
+    canonical: "/",
+    languages: { ru: "/" },
+    types: { "application/rss+xml": [{ url: "/rss.xml", title: "GTA6·БЛОГ" }] },
+  },
   robots: { index: true, follow: true },
 };
 

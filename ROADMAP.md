@@ -6,9 +6,9 @@
 
 **Обновлено:** 2026-09-04 · **Легенда:** ✅ сделано · 🚧 в работе · ⏳ ждёт · 🅿️ отложено · ❌ отброшено
 
-**Прогресс:** P0 — 4/5 (остался деплой). P1 — всё закрыто, кроме Метрики (перенесена в деплой).
+**Прогресс:** P0 — 4/5 (остался деплой). P1 — всё закрыто, кроме Метрики (перенесена в деплой). P2 — RSS + CI закрыты, остальное отброшено.
 
-**Что дальше:** остался только блок «Деплой» — самый последний этап.
+**Что дальше:** остался только блок «Деплой» — самый последний этап. После — блок «Мониторинг».
 
 ---
 
@@ -33,6 +33,7 @@
 - ✅ README.md + `.env.example` (клон-и-запусти инструкция)
 - ✅ Галерея из БД + `/admin/gallery` CRUD, TrendingBar из БД с fallback, view tracking с 10-мин-дедупом
 - ✅ `next/image` для hero и cover статьи, `loading.tsx`/`error.tsx` (public + admin), mobile-адаптив (hover-shift off на touch, компактный header <700px)
+- ✅ RSS-фид `/rss.xml` + GitHub Actions CI (lint + build на push/PR)
 
 ---
 
@@ -66,6 +67,13 @@
   - [ ] HTTPS + auto-renew
   - [ ] Backup Postgres (cron `pg_dump`, ротация 30 дней) + backup `public/uploads/`
   - [ ] Подключить Яндекс.Метрику, Яндекс.Вебмастер, Google Search Console — submit sitemap
+  - [ ] Sentry для отслеживания ошибок в проде
+
+---
+
+## Мониторинг (после деплоя)
+
+- [ ] **Uptime мониторинг** (UptimeRobot / betterstack) — уведомления о падениях
 
 ---
 
@@ -91,15 +99,8 @@
 
 ## P2 — приятные бонусы
 
-- [ ] **RSS-фид** `/rss.xml`
-- [ ] **Автосохранение draft** в редакторе (debounce 5s)
-- [ ] **Feature flags** через env (`NEXT_PUBLIC_COMMENTS_ENABLED` и т.п.)
-- [ ] **Search на `/blog?q=`** — простой `WHERE title ILIKE '%q%'`
-- [ ] **Email провайдер** (Resend / Yandex SMTP) для рассылки
-- [ ] **`/admin/settings`** — общая страница настроек
-- [ ] **Sentry** для отслеживания ошибок в проде
-- [ ] **Uptime мониторинг** (UptimeRobot, betterstack)
-- [ ] **CI/CD** (GitHub Actions: lint + build на PR)
+- [x] **RSS-фид** `/rss.xml` — валидный RSS 2.0, ISR 5 мин, alternate-link в root layout
+- [x] **CI/CD** — GitHub Actions: `lint + build` на push/PR в `main`. Prisma generate + dummy env, sitemap force-dynamic
 
 ---
 
@@ -117,6 +118,7 @@
 - ❌ Полнотекстовый поиск (только простой LIKE)
 - ❌ Смена пароля админа из UI (2026-09-03: 1-3 админа, менять через seed/SQL)
 - ❌ Double opt-in для подписки (2026-09-03: не в MVP, разберёмся после запуска с email провайдером)
+- ❌ Автосохранение draft, feature flags через env, простой search по title, отдельный email провайдер, /admin/settings — не блокеры MVP, отброшены 2026-09-04
 
 ---
 
