@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { toggleReaction, getMyReactions, getReactionCounts } from "@/app/(public)/blog/[slug]/actions";
+import { toggleReaction, getMyReactions } from "@/app/(public)/blog/[slug]/actions";
 
 const TYPES = [
   { key: "fire", label: "🔥" },

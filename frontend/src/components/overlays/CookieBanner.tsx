@@ -9,9 +9,13 @@ export function CookieBanner() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    try {
-      if (!localStorage.getItem(LS_KEY)) setVisible(true);
-    } catch {}
+    // setState через тик, чтобы не триггерить cascading render в effect body
+    const t = setTimeout(() => {
+      try {
+        if (!localStorage.getItem(LS_KEY)) setVisible(true);
+      } catch {}
+    }, 0);
+    return () => clearTimeout(t);
   }, []);
 
   function accept(mode: "all" | "essential") {

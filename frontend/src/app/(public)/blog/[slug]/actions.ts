@@ -1,7 +1,6 @@
 "use server";
 
 import { z } from "zod";
-import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { rateLimit, RateLimitError } from "@/lib/rate-limit";
 import { getIpHash, getFingerprint } from "@/lib/request";
