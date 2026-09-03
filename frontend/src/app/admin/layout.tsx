@@ -72,6 +72,7 @@ export default async function AdminLayout({
           >
             <Link href="/admin">СТАТЬИ</Link>
             <Link href="/admin/comments">КОММЕНТЫ</Link>
+            <Link href="/admin/gallery">ГАЛЕРЕЯ</Link>
             <Link href="/admin/subscribers">ПОДПИСЧИКИ</Link>
             <Link href="/" target="_blank">
               → САЙТ

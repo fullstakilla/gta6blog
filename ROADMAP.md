@@ -4,11 +4,11 @@
 статусу проекта — тут, а не в скиллах (там — «как устроено», здесь — «что
 осталось»).
 
-**Обновлено:** 2026-09-03 · **Легенда:** ✅ сделано · 🚧 в работе · ⏳ ждёт · 🅿️ отложено · ❌ отброшено
+**Обновлено:** 2026-09-04 · **Легенда:** ✅ сделано · 🚧 в работе · ⏳ ждёт · 🅿️ отложено · ❌ отброшено
 
-**Прогресс P0:** 4 из 5 блоков закрыто. Остался только деплой (отложен).
+**Прогресс:** P0 — 4/5 (остался деплой). P1 — всё закрыто, кроме Метрики (перенесена в деплой).
 
-**Что дальше:** P1 — галерея из БД, TrendingBar из БД, view tracking, `next/image`, mobile audit, `loading.tsx`/`error.tsx`.
+**Что дальше:** остался только блок «Деплой» — самый последний этап.
 
 ---
 
@@ -31,6 +31,8 @@
 - ✅ Git репо на GitHub: [fullstakilla/gta6blog](https://github.com/fullstakilla/gta6blog)
 - ✅ Комментарии, реакции, подписка (Ф3) — таблицы, Server Actions, публичный UI, admin-модерация
 - ✅ README.md + `.env.example` (клон-и-запусти инструкция)
+- ✅ Галерея из БД + `/admin/gallery` CRUD, TrendingBar из БД с fallback, view tracking с 10-мин-дедупом
+- ✅ `next/image` для hero и cover статьи, `loading.tsx`/`error.tsx` (public + admin), mobile-адаптив (hover-shift off на touch, компактный header <700px)
 
 ---
 
@@ -58,37 +60,32 @@
 - [x] **`README.md` + `frontend/.env.example`**
   - [x] Инструкция клона + запуска (createdb, prisma migrate, seed, npm run dev)
   - [x] Плейсхолдеры для env-vars без секретов
-- [ ] 🅿️ **Деплой** — решено 2026-09-03 отложить: сначала добить P1
-      (мобилка, галерея из БД, view tracking, `next/image`, `loading`/`error`).
-      Заходим сюда, когда контент и полировка готовы, чтобы не деплоить дважды.
-  - [ ] Выбрать хостинг (Vercel / self-host Docker / Railway / Fly.io) — решение отдельно
-  - [ ] Настроить production Postgres
-  - [ ] `IRON_SESSION_SECRET`, `IP_HASH_SALT`, `DATABASE_URL`, `NEXT_PUBLIC_SITE_URL` в prod env
+- [ ] 🅿️ **Деплой** — самый последний этап MVP
+  - [ ] Выбрать хостинг (Vercel / self-host Docker / Railway / Fly.io)
+  - [ ] Production Postgres + `IRON_SESSION_SECRET`, `IP_HASH_SALT`, `DATABASE_URL`, `NEXT_PUBLIC_SITE_URL` в prod env
   - [ ] HTTPS + auto-renew
   - [ ] Backup Postgres (cron `pg_dump`, ротация 30 дней) + backup `public/uploads/`
+  - [ ] Подключить Яндекс.Метрику, Яндекс.Вебмастер, Google Search Console — submit sitemap
 
 ---
 
 ## P1 — важно, можно после запуска
 
-- [ ] **Галерея из БД**
-  - [ ] Таблица `gallery_items` (миграция)
-  - [ ] `/admin/gallery` — CRUD с upload
-  - [ ] `/gallery` переключить с моков на fetch из БД
-- [ ] **TrendingBar из БД**
-  - [ ] Query по last-hour просмотрам
-  - [ ] Cache 60s
-- [ ] **View tracking**
-  - [ ] Таблица `article_views` (миграция)
-  - [ ] Server Action `trackView({articleId})` — дедуп 10 мин по IP-хэшу
-  - [ ] Вызов из клиента при монтировании страницы статьи
-  - [ ] Инкремент `articles.views_count` (денормализация)
-- [ ] **`next/image` вместо `<img>` для обложек** — оптимизация
-- [ ] **Mobile audit** — прогнать все страницы на 375px, поправить проблемные
-- [ ] **`loading.tsx` / `error.tsx`** — глобальные skeleton + error boundary
-- [ ] **Смена пароля админа из UI** — форма `/admin/settings/password`
-- [ ] **Яндекс.Метрика + Вебмастер + Google Search Console**
-- [ ] **Double opt-in для подписки** — token в БД + email confirm + `/confirm/[token]` endpoint. Требует email провайдера (Resend / Yandex SMTP)
+- [x] **Галерея из БД**
+  - [x] Таблица `gallery_items` (миграция `gallery_and_views`)
+  - [x] `/admin/gallery` — CRUD с upload + сортировка
+  - [x] `/gallery` и teaser на главной переключены с моков на fetch из БД
+- [x] **TrendingBar из БД**
+  - [x] Query по last-hour просмотрам через `article_views` (fallback — свежие)
+- [x] **View tracking**
+  - [x] Таблица `article_views` (миграция)
+  - [x] Server Action `trackView({articleId})` — дедуп 10 мин по IP-хэшу
+  - [x] Вызов из клиента при монтировании страницы статьи через `<ViewTracker>`
+  - [x] Инкремент `articles.views_count` в одной транзакции
+- [x] **`next/image` вместо `<img>` для обложек** — EditorialHero + статья (priority)
+- [x] **Mobile audit** — hover-shift отключен на тач, скрыты длинные подписи в header на <700px, TopBar CTA compact
+- [x] **`loading.tsx` / `error.tsx`** — по обеим веткам (public + admin), skeleton + error boundary
+- [ ] 🅿️ **Яндекс.Метрика + Вебмастер + Google Search Console** — перенесено в блок «Деплой» (нужны реальный домен и HTTPS)
 
 ---
 
@@ -118,14 +115,16 @@
 - ❌ Страницы авторов (кроме имени в статье)
 - ❌ Рекомендательная система
 - ❌ Полнотекстовый поиск (только простой LIKE)
+- ❌ Смена пароля админа из UI (2026-09-03: 1-3 админа, менять через seed/SQL)
+- ❌ Double opt-in для подписки (2026-09-03: не в MVP, разберёмся после запуска с email провайдером)
 
 ---
 
 ## Оценка времени
 
 - **P0 активный остаток:** нет — всё сделано
-- **P0 отложено:** деплой = **1-2 сессии** — вернёмся после P1
-- **P1** = **1 сессия** плотной работы
+- **P0 отложено:** деплой = **1-2 сессии** — самый последний шаг MVP
+- **P1** = ✅ **закрыто** (кроме Метрики, которая идёт с деплоем)
 - **P2** = по желанию, не блокирует запуск
 
 ## Cross-references

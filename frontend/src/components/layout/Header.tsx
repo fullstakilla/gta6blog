@@ -51,6 +51,7 @@ export function Header({ scrolled }: HeaderProps) {
             GTA6_БЛОГ<span style={{ color: "var(--color-accent)" }}>_</span>
           </span>
           <span
+            className="public-header-subtitle"
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 9,
@@ -62,6 +63,7 @@ export function Header({ scrolled }: HeaderProps) {
           </span>
         </Link>
         <nav
+          className="public-header-nav"
           style={{
             display: "flex",
             gap: 22,
@@ -98,6 +100,7 @@ export function Header({ scrolled }: HeaderProps) {
         </nav>
         <div style={{ flex: 1 }} />
         <span
+          className="public-header-issue"
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 11,

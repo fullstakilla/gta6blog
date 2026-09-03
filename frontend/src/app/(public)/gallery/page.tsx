@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { GalleryClient } from "@/components/gallery/GalleryClient";
-import { GALLERY_TILES } from "@/lib/mock-data";
+import { listGalleryItems } from "@/lib/api";
+
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "Галерея",
@@ -9,13 +11,23 @@ export const metadata: Metadata = {
   alternates: { canonical: "/gallery" },
 };
 
-export default function GalleryPage() {
-  // Пока моки — таблица gallery_items и админ добавятся в Фазе 4
-  const items = GALLERY_TILES.map((t, i) => ({
-    id: String(i),
-    caption: t.caption,
-    colSpan: t.colSpan,
-    rowSpan: t.rowSpan,
+// Простое авто-раскладывание: чередуем крупные и мелкие плитки для asymmetric-эффекта
+const LAYOUTS = [
+  { colSpan: 3, rowSpan: 2 },
+  { colSpan: 3, rowSpan: 1 },
+  { colSpan: 2, rowSpan: 1 },
+  { colSpan: 1, rowSpan: 1 },
+  { colSpan: 2, rowSpan: 2 },
+  { colSpan: 4, rowSpan: 1 },
+];
+
+export default async function GalleryPage() {
+  const rows = await listGalleryItems();
+  const items = rows.map((r, i) => ({
+    id: r.id,
+    caption: r.caption ?? "",
+    imageUrl: r.imageUrl,
+    ...LAYOUTS[i % LAYOUTS.length],
   }));
 
   return (
@@ -51,7 +63,28 @@ export default function GalleryPage() {
         </h1>
       </div>
 
-      <GalleryClient items={items} />
+      {items.length === 0 ? (
+        <div
+          style={{
+            padding: "80px 20px",
+            textAlign: "center",
+            border: "1px dashed var(--color-border-default)",
+            borderRadius: 2,
+            fontFamily: "var(--font-mono)",
+            fontSize: 12,
+            letterSpacing: "0.14em",
+            color: "var(--color-muted)",
+          }}
+        >
+          Пока пусто. Загружайте изображения в{" "}
+          <a href="/admin/gallery" style={{ color: "var(--color-accent)" }}>
+            /admin/gallery
+          </a>
+          .
+        </div>
+      ) : (
+        <GalleryClient items={items} />
+      )}
     </section>
   );
 }

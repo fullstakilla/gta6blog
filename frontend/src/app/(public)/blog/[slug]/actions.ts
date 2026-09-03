@@ -142,6 +142,41 @@ export async function getReactionCounts(articleId: string) {
  * Проверяет, какие реакции ставил текущий пользователь на статью
  * (по fingerprint). Возвращает set типов, которые уже стоят.
  */
+const ViewInput = z.object({ articleId: z.string().uuid() });
+
+/**
+ * Инкремент просмотра статьи. Дедуп по IP-хэшу в окне 10 минут.
+ * Fire-and-forget с клиента при монтировании страницы статьи.
+ */
+export async function trackView(input: unknown): Promise<{ ok: boolean }> {
+  const parsed = ViewInput.safeParse(input);
+  if (!parsed.success) return { ok: false };
+
+  const ipHash = await getIpHash();
+  const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+
+  const recent = await db.articleView.findFirst({
+    where: {
+      articleId: parsed.data.articleId,
+      ipHash,
+      viewedAt: { gte: tenMinutesAgo },
+    },
+    select: { id: true },
+  });
+  if (recent) return { ok: true }; // тихо игнорим повторный view
+
+  await db.$transaction([
+    db.articleView.create({
+      data: { articleId: parsed.data.articleId, ipHash },
+    }),
+    db.article.update({
+      where: { id: parsed.data.articleId },
+      data: { viewsCount: { increment: 1 } },
+    }),
+  ]);
+  return { ok: true };
+}
+
 export async function getMyReactions(articleId: string): Promise<string[]> {
   const fingerprint = await getFingerprint();
   const mine = await db.reaction.findMany({

@@ -71,9 +71,23 @@ async function main() {
     });
   }
 
+  const gallery = [
+    { imageUrl: "https://placehold.co/1920x1080/0D0D0D/D4FF00/png?text=VICE+BEACH", caption: "VICE BEACH · 3840×2160", source: "screenshot" as const, sortOrder: 1 },
+    { imageUrl: "https://placehold.co/1200x1600/0D0D0D/D4FF00/png?text=LUCIA", caption: "ЛЮСИЯ · КЛЮЧЕВОЙ АРТ", source: "concept" as const, sortOrder: 2 },
+    { imageUrl: "https://placehold.co/1920x1080/0D0D0D/D4FF00/png?text=DOWNTOWN", caption: "DOWNTOWN · НОЧЬ", source: "screenshot" as const, sortOrder: 3 },
+    { imageUrl: "https://placehold.co/1000x1000/0D0D0D/D4FF00/png?text=MAP", caption: "ФРАГМЕНТ КАРТЫ", source: "leak" as const, sortOrder: 4 },
+    { imageUrl: "https://placehold.co/1600x1200/0D0D0D/D4FF00/png?text=SWAMP", caption: "БОЛОТА · КОНЦЕПТ", source: "concept" as const, sortOrder: 5 },
+    { imageUrl: "https://placehold.co/1920x1080/0D0D0D/D4FF00/png?text=TRAILER+02", caption: "ТРЕЙЛЕР 02 · КАДР 0:47", source: "trailer" as const, sortOrder: 6 },
+  ];
+  for (const g of gallery) {
+    const existing = await db.galleryItem.findFirst({ where: { caption: g.caption } });
+    if (!existing) await db.galleryItem.create({ data: g });
+  }
+
   console.log("✓ Seed complete");
   console.log(`  Admin: admin@gta6blog.ru / dev`);
   console.log(`  Articles: ${articles.length}`);
+  console.log(`  Gallery items: ${gallery.length}`);
 }
 
 main()

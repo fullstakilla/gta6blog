@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { CATEGORY_LABEL_UPPER } from "@/lib/i18n";
 import type { ArticleTag } from "@/types/api";
 
@@ -142,10 +143,12 @@ export function EditorialHero({ hero }: EditorialHeroProps) {
         <div
           className="hero-cover"
           style={{
+            position: "relative",
             minHeight: 420,
             border: "1px solid var(--color-border-default)",
+            overflow: "hidden",
             background: hero.coverImage
-              ? `center / cover no-repeat url("${hero.coverImage}")`
+              ? "transparent"
               : "var(--color-surface)",
             backgroundImage: hero.coverImage
               ? undefined
@@ -160,7 +163,20 @@ export function EditorialHero({ hero }: EditorialHeroProps) {
             color: "var(--color-muted)",
           }}
         >
-          {!hero.coverImage && "ОБЛОЖКА · НЕ ЗАГРУЖЕНА"}
+          {hero.coverImage ? (
+            <Image
+              src={hero.coverImage}
+              alt=""
+              fill
+              sizes="(max-width: 900px) 100vw, 480px"
+              priority
+              style={{ objectFit: "cover" }}
+            />
+          ) : (
+            <span style={{ position: "relative", zIndex: 1 }}>
+              ОБЛОЖКА · НЕ ЗАГРУЖЕНА
+            </span>
+          )}
         </div>
       </div>
       <style>{`

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { marked } from "marked";
 import {
   getArticleBySlug,
@@ -13,6 +14,7 @@ import { StructuredData } from "@/components/seo/StructuredData";
 import { articleJsonLd } from "@/lib/seo";
 import { ReactionBar } from "@/components/blog/ReactionBar";
 import { CommentSection } from "@/components/blog/CommentSection";
+import { ViewTracker } from "@/components/blog/ViewTracker";
 import { getReactionCounts } from "./actions";
 
 export const revalidate = 3600;
@@ -149,18 +151,26 @@ export default async function ArticlePage({ params }: Props) {
       )}
 
       {article.coverImage && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={article.coverImage}
-          alt=""
+        <div
           style={{
+            position: "relative",
             width: "100%",
-            height: "auto",
+            aspectRatio: "16 / 9",
             marginTop: 40,
             border: "1px solid var(--color-border-default)",
             borderRadius: 2,
+            overflow: "hidden",
           }}
-        />
+        >
+          <Image
+            src={article.coverImage}
+            alt=""
+            fill
+            sizes="(max-width: 800px) 100vw, 800px"
+            priority
+            style={{ objectFit: "cover" }}
+          />
+        </div>
       )}
 
       <div
@@ -175,6 +185,7 @@ export default async function ArticlePage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: html }}
       />
 
+      <ViewTracker articleId={article.id} />
       <ReactionBar articleId={article.id} initialCounts={reactionCounts} />
 
       {article.tags.length > 0 && (

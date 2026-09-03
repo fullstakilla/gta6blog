@@ -1,8 +1,19 @@
 import Link from "next/link";
-import { GALLERY_TILES } from "@/lib/mock-data";
+import { listGalleryItems } from "@/lib/api";
 
-export function GalleryTeaser() {
-  const tiles = GALLERY_TILES.slice(0, 6);
+const LAYOUTS = [
+  { colSpan: 3, rowSpan: 2 },
+  { colSpan: 3, rowSpan: 1 },
+  { colSpan: 2, rowSpan: 1 },
+  { colSpan: 1, rowSpan: 1 },
+  { colSpan: 2, rowSpan: 2 },
+  { colSpan: 4, rowSpan: 1 },
+];
+
+export async function GalleryTeaser() {
+  const tiles = await listGalleryItems(6);
+  if (tiles.length === 0) return null;
+
   return (
     <section
       id="gallery"
@@ -42,7 +53,7 @@ export function GalleryTeaser() {
             color: "var(--color-muted)",
           }}
         >
-          → ВСЕ 247 ИЗОБРАЖЕНИЙ
+          → ВСЕ ИЗОБРАЖЕНИЯ
         </Link>
       </div>
       <div
@@ -54,42 +65,46 @@ export function GalleryTeaser() {
         }}
         className="gallery-teaser-grid"
       >
-        {tiles.map((t, i) => (
-          <figure
-            key={i}
-            style={{
-              margin: 0,
-              display: "flex",
-              flexDirection: "column",
-              gridColumn: `span ${t.colSpan}`,
-              gridRow: `span ${t.rowSpan}`,
-            }}
-          >
-            <div
-              className="gallery-tile"
+        {tiles.map((t, i) => {
+          const layout = LAYOUTS[i % LAYOUTS.length];
+          return (
+            <figure
+              key={t.id}
               style={{
-                flex: 1,
-                border: "1px solid var(--color-border-default)",
-                background: "var(--color-surface)",
-                backgroundImage:
-                  "repeating-linear-gradient(135deg, rgba(255,255,255,0.05) 0 1px, transparent 1px 7px)",
-                transition:
-                  "transform 200ms ease-out, border-color 200ms ease-out",
-              }}
-            />
-            <figcaption
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                letterSpacing: "0.16em",
-                color: "var(--color-muted)",
-                paddingTop: 8,
+                margin: 0,
+                display: "flex",
+                flexDirection: "column",
+                gridColumn: `span ${layout.colSpan}`,
+                gridRow: `span ${layout.rowSpan}`,
               }}
             >
-              {t.caption}
-            </figcaption>
-          </figure>
-        ))}
+              <Link
+                href="/gallery"
+                className="gallery-tile"
+                aria-label={t.caption ?? "gallery tile"}
+                style={{
+                  flex: 1,
+                  border: "1px solid var(--color-border-default)",
+                  borderRadius: 2,
+                  background: `center / cover no-repeat url("${t.imageUrl}")`,
+                  transition:
+                    "transform 200ms ease-out, border-color 200ms ease-out",
+                }}
+              />
+              <figcaption
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  letterSpacing: "0.16em",
+                  color: "var(--color-muted)",
+                  paddingTop: 8,
+                }}
+              >
+                {t.caption ?? ""}
+              </figcaption>
+            </figure>
+          );
+        })}
       </div>
       <style>{`
         .gallery-tile:hover { transform: scale(1.015); border-color: var(--color-accent) !important; }

@@ -42,6 +42,7 @@ export function TopBar() {
         </div>
         <a
           href="#countdown"
+          className="public-topbar-cta"
           style={{ color: "var(--color-muted)" }}
         >
           [ПОЧЕМУ ЭТО ВАЖНО →]

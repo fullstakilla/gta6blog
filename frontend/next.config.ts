@@ -21,6 +21,12 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  images: {
+    // разрешаем next/image брать из локального /uploads и placehold.co (seed)
+    remotePatterns: [
+      { protocol: "https", hostname: "placehold.co" },
+    ],
+  },
   async headers() {
     return [
       {

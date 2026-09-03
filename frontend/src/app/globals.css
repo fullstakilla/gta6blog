@@ -125,4 +125,19 @@ input {
   color: var(--color-text) !important;
 }
 
+/* Mobile — общий: убрать hover-shift на тач-устройствах */
+@media (hover: none) {
+  .article-row:hover { transform: none !important; }
+  .archive-card:hover { transform: none !important; }
+  .gallery-tile:hover { transform: none !important; }
+}
+
+/* Mobile — компактный TopBar, скрыть длинные подписи в header */
+@media (max-width: 700px) {
+  .public-header-nav { display: none !important; }
+  .public-header-issue { display: none !important; }
+  .public-header-subtitle { display: none !important; }
+  .public-topbar-cta { display: none !important; }
+}
+
 

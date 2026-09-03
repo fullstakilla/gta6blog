@@ -1,7 +1,17 @@
-import { TRENDING } from "@/lib/mock-data";
+import Link from "next/link";
+import { listTrending, type TrendingArticle } from "@/lib/api";
 
-export function TrendingBar() {
-  const items = [...TRENDING, ...TRENDING];
+export async function TrendingBar() {
+  let items: TrendingArticle[] = [];
+  try {
+    items = await listTrending(3);
+  } catch {
+    // fallback — молча пустой
+  }
+
+  if (items.length === 0) return null;
+
+  const loop = [...items, ...items];
   return (
     <section
       style={{
@@ -58,13 +68,20 @@ export function TrendingBar() {
               whiteSpace: "nowrap",
             }}
           >
-            {items.map((it, i) => (
-              <span key={i} style={{ paddingRight: 40 }}>
+            {loop.map((it, i) => (
+              <Link
+                key={i}
+                href={`/blog/${it.slug}`}
+                style={{
+                  paddingRight: 40,
+                  color: "var(--color-muted)",
+                }}
+              >
                 {it.title}
                 <span style={{ color: "var(--color-accent)", marginLeft: 12 }}>
                   {it.count}
                 </span>
-              </span>
+              </Link>
             ))}
           </div>
         </div>

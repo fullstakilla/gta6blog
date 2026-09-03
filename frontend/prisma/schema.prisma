@@ -43,6 +43,13 @@ enum ReactionType {
   hundred
 }
 
+enum GallerySource {
+  trailer
+  screenshot
+  leak
+  concept
+}
+
 model Author {
   id           String    @id @default(uuid()) @db.Uuid
   name         String
@@ -126,4 +133,28 @@ model Subscriber {
   ipHash        String?  @map("ip_hash")
 
   @@map("subscribers")
+}
+
+model GalleryItem {
+  id         String        @id @default(uuid()) @db.Uuid
+  imageUrl   String        @map("image_url")
+  caption    String?
+  source     GallerySource @default(screenshot)
+  width      Int?
+  height     Int?
+  sortOrder  Int           @default(0) @map("sort_order")
+  createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([sortOrder])
+  @@map("gallery_items")
+}
+
+model ArticleView {
+  id        BigInt   @id @default(autoincrement())
+  articleId String   @map("article_id") @db.Uuid
+  ipHash    String?  @map("ip_hash")
+  viewedAt  DateTime @default(now()) @map("viewed_at") @db.Timestamptz
+
+  @@index([articleId, viewedAt(sort: Desc)])
+  @@map("article_views")
 }
