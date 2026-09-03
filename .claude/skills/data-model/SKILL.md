@@ -199,7 +199,7 @@ FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 ## Seed
 
-`frontend/prisma/seed.ts` (запускается `prisma db seed`): 10 тестовых статей во всех категориях (одна с `is_hero=true`), 1 admin author (`admin@gta6-blog.ru / dev`), 20 тестовых комментов (mix статусов), 5 подписчиков, 15 gallery_items. Пароли через `bcrypt` cost 12.
+`frontend/prisma/seed.ts` (запускается `prisma db seed`): 10 тестовых статей во всех категориях (одна с `is_hero=true`), 1 admin author (`admin@gta6blog.ru / dev`), 20 тестовых комментов (mix статусов), 5 подписчиков, 15 gallery_items. Пароли через `bcrypt` cost 12.
 
 ## Backup
 

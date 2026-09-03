@@ -69,7 +69,7 @@ npx tsx prisma/seed.ts
 ```
 
 Seed создаст:
-- Админа: **admin@gta6-blog.ru / dev**
+- Админа: **admin@gta6blog.ru / dev**
 - 4 демо-статьи (одна помечена `is_featured`)
 
 ### 4. Запуск

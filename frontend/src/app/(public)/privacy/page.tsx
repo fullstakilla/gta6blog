@@ -50,7 +50,7 @@ export default function PrivacyPage() {
       <Section title="1. Кто мы">
         <p>
           Оператор — редакция GTA6·БЛОГ, независимый фан-сайт. Не является
-          юридическим лицом. Контакт: hello@gta6-blog.ru.
+          юридическим лицом. Контакт: hello@gta6blog.ru.
         </p>
       </Section>
 
@@ -106,7 +106,7 @@ export default function PrivacyPage() {
           <li>Отписаться от рассылки в любой момент (ссылка в каждом письме).</li>
           <li>
             Попросить удалить ваш комментарий или email — напишите на
-            hello@gta6-blog.ru.
+            hello@gta6blog.ru.
           </li>
           <li>Получить копию хранимых о вас данных по запросу.</li>
         </ul>

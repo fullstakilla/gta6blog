@@ -92,14 +92,14 @@ export default function AboutPage() {
         <p>
           Пишите на{" "}
           <a
-            href="mailto:hello@gta6-blog.ru"
+            href="mailto:hello@gta6blog.ru"
             style={{
               color: "var(--color-accent)",
               textDecoration: "underline",
               textUnderlineOffset: 3,
             }}
           >
-            hello@gta6-blog.ru
+            hello@gta6blog.ru
           </a>
           . Инсайдам гарантируем анонимность.
         </p>

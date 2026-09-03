@@ -9,11 +9,11 @@ const db = new PrismaClient({ adapter });
 async function main() {
   const passwordHash = await bcrypt.hash("dev", 12);
   const admin = await db.author.upsert({
-    where: { email: "admin@gta6-blog.ru" },
+    where: { email: "admin@gta6blog.ru" },
     update: {},
     create: {
       name: "Админ",
-      email: "admin@gta6-blog.ru",
+      email: "admin@gta6blog.ru",
       passwordHash,
       role: "admin",
     },
@@ -72,7 +72,7 @@ async function main() {
   }
 
   console.log("✓ Seed complete");
-  console.log(`  Admin: admin@gta6-blog.ru / dev`);
+  console.log(`  Admin: admin@gta6blog.ru / dev`);
   console.log(`  Articles: ${articles.length}`);
 }
 

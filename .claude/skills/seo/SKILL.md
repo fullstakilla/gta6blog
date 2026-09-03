@@ -37,7 +37,7 @@ description: SEO-стратегия — стратегии рендеринга 
 
 ```ts
 export const metadata: Metadata = {
-  metadataBase: new URL('https://gta6-blog.ru'),
+  metadataBase: new URL('https://gta6blog.ru'),
   title: {
     default: 'GTA6·БЛОГ — Vice City is coming',
     template: '%s · GTA6·БЛОГ',
@@ -119,7 +119,7 @@ export function StructuredData({ data }: { data: object }) {
   "publisher": {
     "@type": "Organization",
     "name": "GTA6·БЛОГ",
-    "logo": { "@type": "ImageObject", "url": "https://gta6-blog.ru/logo.png" }
+    "logo": { "@type": "ImageObject", "url": "https://gta6blog.ru/logo.png" }
   }
 }
 ```
@@ -130,10 +130,10 @@ export function StructuredData({ data }: { data: object }) {
 {
   "@context": "https://schema.org",
   "@type": "WebSite",
-  "url": "https://gta6-blog.ru",
+  "url": "https://gta6blog.ru",
   "potentialAction": {
     "@type": "SearchAction",
-    "target": "https://gta6-blog.ru/blog?q={query}",
+    "target": "https://gta6blog.ru/blog?q={query}",
     "query-input": "required name=query"
   }
 }
@@ -163,12 +163,12 @@ export function StructuredData({ data }: { data: object }) {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const articles = await fetchAllPublishedArticles();
   return [
-    { url: 'https://gta6-blog.ru', lastModified: new Date(), changeFrequency: 'hourly', priority: 1 },
-    { url: 'https://gta6-blog.ru/blog', lastModified: new Date(), changeFrequency: 'hourly', priority: 0.9 },
-    { url: 'https://gta6-blog.ru/gallery', changeFrequency: 'weekly', priority: 0.7 },
-    { url: 'https://gta6-blog.ru/about', changeFrequency: 'yearly', priority: 0.3 },
+    { url: 'https://gta6blog.ru', lastModified: new Date(), changeFrequency: 'hourly', priority: 1 },
+    { url: 'https://gta6blog.ru/blog', lastModified: new Date(), changeFrequency: 'hourly', priority: 0.9 },
+    { url: 'https://gta6blog.ru/gallery', changeFrequency: 'weekly', priority: 0.7 },
+    { url: 'https://gta6blog.ru/about', changeFrequency: 'yearly', priority: 0.3 },
     ...articles.map(a => ({
-      url: `https://gta6-blog.ru/blog/${a.slug}`,
+      url: `https://gta6blog.ru/blog/${a.slug}`,
       lastModified: new Date(a.updated_at),
       changeFrequency: 'weekly' as const,
       priority: 0.8,
@@ -187,8 +187,8 @@ export default function robots(): MetadataRoute.Robots {
       { userAgent: 'Yandex', allow: '/', disallow: ['/admin', '/api'] },  // явный allow для Яндекса
       { userAgent: 'Googlebot', allow: '/', disallow: ['/admin', '/api'] },
     ],
-    sitemap: 'https://gta6-blog.ru/sitemap.xml',
-    host: 'https://gta6-blog.ru',
+    sitemap: 'https://gta6blog.ru/sitemap.xml',
+    host: 'https://gta6blog.ru',
   };
 }
 ```

@@ -1,7 +1,7 @@
 export const RELEASE_DATE = "2026-05-26T00:00:00Z";
 
 export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://gta6-blog.ru";
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://gta6blog.ru";
 
 export const LS_KEYS = {
   firstVisit: "gta6_firstVisit",

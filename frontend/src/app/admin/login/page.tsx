@@ -72,7 +72,7 @@ export default function LoginPage() {
               type="email"
               required
               autoComplete="username"
-              defaultValue="admin@gta6-blog.ru"
+              defaultValue="admin@gta6blog.ru"
               style={inputStyle}
             />
           </label>
