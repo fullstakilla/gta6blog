@@ -3,8 +3,9 @@ import { SITE_URL } from "@/lib/constants";
 import { CATEGORY_LABEL_UPPER } from "@/lib/i18n";
 import type { ArticleTag } from "@/types/api";
 
-// ISR — обновляется вместе с главной, чтоб не бить БД на каждый заход агрегатора
-export const revalidate = 300;
+// force-dynamic — чтобы CI/prerender без DATABASE_URL не падал.
+// Cache-Control на response всё равно даёт 5 мин CDN-кэша.
+export const dynamic = "force-dynamic";
 
 function escapeXml(s: string): string {
   return s
