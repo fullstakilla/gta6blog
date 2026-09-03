@@ -89,3 +89,50 @@ export async function getArticleBySlug(slug: string) {
     include: { author: { select: { name: true } } },
   });
 }
+
+interface CommentNode {
+  id: string;
+  authorName: string;
+  content: string;
+  createdAt: Date;
+  replies: CommentNode[];
+}
+
+/**
+ * Одобренные комментарии статьи, свёрнутые в дерево (parent → replies).
+ * Ограничение глубины (3) — на клиенте (`CommentSection`).
+ */
+export async function listApprovedComments(articleId: string): Promise<CommentNode[]> {
+  const rows = await db.comment.findMany({
+    where: { articleId, status: "approved" },
+    orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      parentId: true,
+      authorName: true,
+      content: true,
+      createdAt: true,
+    },
+  });
+
+  const byId = new Map<string, CommentNode>();
+  const roots: CommentNode[] = [];
+  for (const r of rows) {
+    byId.set(r.id, {
+      id: r.id,
+      authorName: r.authorName,
+      content: r.content,
+      createdAt: r.createdAt,
+      replies: [],
+    });
+  }
+  for (const r of rows) {
+    const node = byId.get(r.id)!;
+    if (r.parentId && byId.has(r.parentId)) {
+      byId.get(r.parentId)!.replies.push(node);
+    } else {
+      roots.push(node);
+    }
+  }
+  return roots;
+}

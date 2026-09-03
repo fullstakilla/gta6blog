@@ -1,10 +1,32 @@
 "use client";
 
+import { useState, useTransition } from "react";
+import { subscribeEmail } from "@/app/(public)/actions";
+import { LS_KEYS } from "@/lib/constants";
+
 interface ExitIntentProps {
   onClose: () => void;
 }
 
 export function ExitIntent({ onClose }: ExitIntentProps) {
+  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+  const [isPending, startTransition] = useTransition();
+
+  async function onSubmit(fd: FormData) {
+    startTransition(async () => {
+      const res = await subscribeEmail({ email: String(fd.get("email") ?? "") });
+      if (res.ok) {
+        setStatus("success");
+        try {
+          localStorage.setItem(LS_KEYS.subscribed, "1");
+        } catch {}
+        setTimeout(onClose, 1500);
+      } else {
+        setStatus("error");
+      }
+    });
+  }
+
   return (
     <div
       style={{
@@ -83,12 +105,11 @@ export function ExitIntent({ onClose }: ExitIntentProps) {
         >
 Подпишись на еженедельную рассылку. Только важное. Отписаться можно в любой момент.
         </p>
-        <form
-          onSubmit={(e) => e.preventDefault()}
-          style={{ display: "flex", gap: 8 }}
-        >
+        <form action={onSubmit} style={{ display: "flex", gap: 8 }}>
           <input
+            name="email"
             type="email"
+            required
             placeholder="your@email.com"
             style={{
               flex: 1,
@@ -104,6 +125,7 @@ export function ExitIntent({ onClose }: ExitIntentProps) {
           />
           <button
             type="submit"
+            disabled={isPending}
             style={{
               fontFamily: "var(--font-mono)",
               fontWeight: 700,
@@ -114,12 +136,39 @@ export function ExitIntent({ onClose }: ExitIntentProps) {
               border: 0,
               borderRadius: 2,
               padding: "14px 18px",
-              cursor: "pointer",
+              cursor: isPending ? "wait" : "pointer",
+              opacity: isPending ? 0.6 : 1,
             }}
           >
-[ОК →]
+            {isPending ? "…" : "[ОК →]"}
           </button>
         </form>
+        {status === "success" && (
+          <div
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              letterSpacing: "0.14em",
+              color: "var(--color-success)",
+              paddingTop: 12,
+            }}
+          >
+            ✓ Готово. Ждём тебя в почте.
+          </div>
+        )}
+        {status === "error" && (
+          <div
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              letterSpacing: "0.14em",
+              color: "var(--color-danger)",
+              paddingTop: 12,
+            }}
+          >
+            Не удалось подписаться, попробуй позже.
+          </div>
+        )}
         <button
           type="button"
           onClick={onClose}

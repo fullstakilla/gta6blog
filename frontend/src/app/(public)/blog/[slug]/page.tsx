@@ -2,11 +2,18 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { marked } from "marked";
-import { getArticleBySlug, listPublishedArticles } from "@/lib/api";
+import {
+  getArticleBySlug,
+  listPublishedArticles,
+  listApprovedComments,
+} from "@/lib/api";
 import { CATEGORY_LABEL_UPPER } from "@/lib/i18n";
 import type { ArticleTag } from "@/types/api";
 import { StructuredData } from "@/components/seo/StructuredData";
 import { articleJsonLd } from "@/lib/seo";
+import { ReactionBar } from "@/components/blog/ReactionBar";
+import { CommentSection } from "@/components/blog/CommentSection";
+import { getReactionCounts } from "./actions";
 
 export const revalidate = 3600;
 
@@ -42,10 +49,11 @@ export default async function ArticlePage({ params }: Props) {
   const article = await getArticleBySlug(slug);
   if (!article) notFound();
 
-  const related = await listPublishedArticles({
-    excludeSlug: slug,
-    limit: 3,
-  });
+  const [related, comments, reactionCounts] = await Promise.all([
+    listPublishedArticles({ excludeSlug: slug, limit: 3 }),
+    listApprovedComments(article.id),
+    getReactionCounts(article.id),
+  ]);
 
   const html = await marked.parse(article.content, { async: true });
   const category = CATEGORY_LABEL_UPPER[article.category as ArticleTag] ?? article.category;
@@ -167,6 +175,8 @@ export default async function ArticlePage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: html }}
       />
 
+      <ReactionBar articleId={article.id} initialCounts={reactionCounts} />
+
       {article.tags.length > 0 && (
         <div
           style={{
@@ -196,6 +206,8 @@ export default async function ArticlePage({ params }: Props) {
           ))}
         </div>
       )}
+
+      <CommentSection articleId={article.id} comments={comments} />
 
       {related.length > 0 && (
         <section style={{ marginTop: 72 }}>

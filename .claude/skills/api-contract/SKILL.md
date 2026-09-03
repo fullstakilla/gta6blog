@@ -175,13 +175,23 @@ Server Actions бросают исключения. Клиент оборачи�
 - Одобрение комментария → `revalidatePath('/blog/'+slug)`.
 - Никаких webhook'ов на `/api/revalidate` — Server Action сама вызывает `revalidatePath`.
 
-## СТАТУС (2026-09-01)
+## СТАТУС (2026-09-03)
 
-Ни одна операция не реализована. Есть только заглушки:
-- `frontend/src/lib/api.ts::getHeroArticle()` — мок.
-- `frontend/src/lib/mock-data.ts` — ARTICLES/TRENDING/GALLERY_TILES.
+**Реализовано:**
+- `lib/api.ts` — `getHeroArticle`, `listPublishedArticles`, `listArchiveArticles`, `getArticleBySlug`, `listApprovedComments`
+- `app/(public)/blog/[slug]/actions.ts` — `createComment` (sanitize + rate 3/min), `toggleReaction` (fingerprint-dedup, rate 10/min), `getReactionCounts`, `getMyReactions`
+- `app/(public)/actions.ts` — `subscribeEmail` (rate 5/hour)
+- `app/admin/articles/actions.ts` — `createArticle`, `updateArticle`, `deleteArticle` (transaction для `is_featured`)
+- `app/admin/comments/actions.ts` — `moderateComment`, `moderateCommentsBulk`, `deleteCommentPermanent`
+- `app/admin/auth/actions.ts` — `login`, `logout`
+- `app/api/admin/upload/route.ts` — image upload
+- `app/api/admin/subscribers.csv/route.ts` — CSV-экспорт
 
-При первом реальном шаге бэка: настроить Prisma, создать миграцию по skill `data-model`, реализовать `lib/db/articles.ts` (заменяет mock-data для сервера), затем первый Server Action (comment или subscribe — самое простое).
+**Не реализовано:**
+- `trendings` из БД (Ф4)
+- Article view tracking (Ф4)
+- `/api/stats/online` (Ф4)
+- Double opt-in для подписки (P1)
 
 ## Cross-references
 

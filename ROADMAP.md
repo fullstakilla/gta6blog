@@ -25,6 +25,7 @@
 - ✅ `requireAdmin()` во всех admin Server Actions
 - ✅ Cookie consent banner
 - ✅ Git репо на GitHub: [fullstakilla/gta6blog](https://github.com/fullstakilla/gta6blog)
+- ✅ Комментарии, реакции, подписка (Ф3) — таблицы, Server Actions, публичный UI, admin-модерация
 
 ---
 
@@ -32,23 +33,23 @@
 
 Без этих пунктов запускать нельзя.
 
-- [ ] **Комментарии**
-  - [ ] Таблица `comments` (в схеме [data-model](.claude/skills/data-model/SKILL.md), нужна миграция)
-  - [ ] Server Action `createComment` (zod + `sanitizeComment` + rate limit 3/мин)
-  - [ ] Форма на `/blog/[slug]` (name + email опционально + content)
-  - [ ] Nested-рендер до 3 уровней
-  - [ ] `/admin/comments?status=pending` с bulk approve/reject/spam
-- [ ] **Реакции** 🔥 ❤️ 😂 🤔 💯
-  - [ ] Таблица `reactions` (миграция)
-  - [ ] Компонент `<ReactionBar articleId>` под статьёй
-  - [ ] Server Action `toggleReaction` (fingerprint-дедуп, rate 10/мин)
-  - [ ] Оптимистичные счётчики
-- [ ] **Подписка email рабочая**
-  - [ ] Таблица `subscribers` (миграция)
-  - [ ] Server Action `subscribeEmail` (zod + rate 5/час)
-  - [ ] Форма Subscribe + ExitIntent завязана на action
-  - [ ] `/admin/subscribers` — список + экспорт CSV
-  - [ ] (опционально в P0) double opt-in через email — можно перенести в P1
+- [x] **Комментарии**
+  - [x] Таблица `comments` (миграция `20260903200541_interactions`)
+  - [x] Server Action `createComment` (zod + `sanitizeComment` + rate limit 3/мин)
+  - [x] Форма на `/blog/[slug]` (name + email опционально + content)
+  - [x] Nested-рендер до 3 уровней
+  - [x] `/admin/comments?status=pending` с bulk approve/reject/spam
+- [x] **Реакции** 🔥 ❤️ 😂 🤔 💯
+  - [x] Таблица `reactions` (миграция)
+  - [x] Компонент `<ReactionBar articleId>` под статьёй
+  - [x] Server Action `toggleReaction` (fingerprint-дедуп, rate 10/мин)
+  - [x] Оптимистичные счётчики
+- [x] **Подписка email рабочая**
+  - [x] Таблица `subscribers` (миграция)
+  - [x] Server Action `subscribeEmail` (zod + rate 5/час)
+  - [x] Форма Subscribe + ExitIntent завязана на action
+  - [x] `/admin/subscribers` — список + экспорт CSV (`/api/admin/subscribers.csv`)
+  - [ ] Double opt-in через email — перенесён в P1
 - [ ] **`README.md` + `frontend/.env.example`**
   - [ ] Инструкция клона + запуска (createdb, prisma migrate, seed, npm run dev)
   - [ ] Плейсхолдеры для env-vars без секретов
@@ -80,7 +81,7 @@
 - [ ] **`loading.tsx` / `error.tsx`** — глобальные skeleton + error boundary
 - [ ] **Смена пароля админа из UI** — форма `/admin/settings/password`
 - [ ] **Яндекс.Метрика + Вебмастер + Google Search Console**
-- [ ] **Double opt-in для подписки** (если не сделан в P0)
+- [ ] **Double opt-in для подписки** — token в БД + email confirm + `/confirm/[token]` endpoint. Требует email провайдера (Resend / Yandex SMTP)
 
 ---
 

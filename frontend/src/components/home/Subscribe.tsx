@@ -1,10 +1,38 @@
 "use client";
 
+import { useState, useTransition } from "react";
 import { useCountdown } from "@/hooks/useCountdown";
-import { RELEASE_DATE } from "@/lib/constants";
+import { RELEASE_DATE, LS_KEYS } from "@/lib/constants";
+import { subscribeEmail } from "@/app/(public)/actions";
 
 export function Subscribe() {
   const { days: daysUntil } = useCountdown(RELEASE_DATE);
+  const [status, setStatus] = useState<
+    { kind: "idle" } | { kind: "success"; already: boolean } | { kind: "error"; message: string }
+  >({ kind: "idle" });
+  const [isPending, startTransition] = useTransition();
+
+  async function onSubmit(fd: FormData) {
+    setStatus({ kind: "idle" });
+    startTransition(async () => {
+      const res = await subscribeEmail({ email: String(fd.get("email") ?? "") });
+      if (res.ok) {
+        setStatus({ kind: "success", already: res.alreadySubscribed });
+        try {
+          localStorage.setItem(LS_KEYS.subscribed, "1");
+        } catch {}
+      } else {
+        setStatus({
+          kind: "error",
+          message:
+            res.code === "INVALID_INPUT"
+              ? "Проверь email"
+              : res.message ?? "Не удалось подписаться",
+        });
+      }
+    });
+  }
+
   return (
     <section
       id="subscribe"
@@ -48,7 +76,7 @@ export function Subscribe() {
 Только важное. Отписаться можно в любой момент.
           </p>
           <form
-            onSubmit={(e) => e.preventDefault()}
+            action={onSubmit}
             style={{
               display: "flex",
               gap: 8,
@@ -57,7 +85,9 @@ export function Subscribe() {
             }}
           >
             <input
+              name="email"
               type="email"
+              required
               placeholder="your@email.com"
               style={{
                 flex: 1,
@@ -73,6 +103,7 @@ export function Subscribe() {
             />
             <button
               type="submit"
+              disabled={isPending}
               style={{
                 fontFamily: "var(--font-mono)",
                 fontWeight: 700,
@@ -83,12 +114,39 @@ export function Subscribe() {
                 border: "1px solid var(--color-accent)",
                 borderRadius: 2,
                 padding: "15px 26px",
-                cursor: "pointer",
+                cursor: isPending ? "wait" : "pointer",
+                opacity: isPending ? 0.6 : 1,
               }}
             >
-              [ПОДПИСАТЬСЯ →]
+              {isPending ? "…" : "[ПОДПИСАТЬСЯ →]"}
             </button>
           </form>
+          {status.kind === "success" && (
+            <div
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                letterSpacing: "0.14em",
+                color: "var(--color-success)",
+                paddingTop: 12,
+              }}
+            >
+              ✓ {status.already ? "Ты уже подписан!" : "Готово. Ждём тебя в почте."}
+            </div>
+          )}
+          {status.kind === "error" && (
+            <div
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                letterSpacing: "0.14em",
+                color: "var(--color-danger)",
+                paddingTop: 12,
+              }}
+            >
+              {status.message}
+            </div>
+          )}
           <div
             style={{
               fontFamily: "var(--font-mono)",

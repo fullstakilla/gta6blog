@@ -59,6 +59,3 @@ CREATE INDEX "articles_tags_idx" ON "articles" USING GIN ("tags");
 
 -- AddForeignKey
 ALTER TABLE "articles" ADD CONSTRAINT "articles_author_id_fkey" FOREIGN KEY ("author_id") REFERENCES "authors"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- Only one article can be featured at a time (partial unique index — Prisma does not support this natively)
-CREATE UNIQUE INDEX IF NOT EXISTS "articles_single_featured" ON "articles" ((true)) WHERE "is_featured" = true;

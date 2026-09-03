@@ -28,6 +28,21 @@ enum AuthorRole {
   admin
 }
 
+enum CommentStatus {
+  pending
+  approved
+  rejected
+  spam
+}
+
+enum ReactionType {
+  fire
+  love
+  laugh
+  think
+  hundred
+}
+
 model Author {
   id           String    @id @default(uuid()) @db.Uuid
   name         String
@@ -60,8 +75,55 @@ model Article {
   metaDesc    String?       @map("meta_desc")
   isFeatured  Boolean       @default(false) @map("is_featured")
 
+  comments    Comment[]
+  reactions   Reaction[]
+
   @@index([slug])
   @@index([publishedAt(sort: Desc)])
   @@index([tags], type: Gin)
   @@map("articles")
+}
+
+model Comment {
+  id          String        @id @default(uuid()) @db.Uuid
+  articleId   String        @map("article_id") @db.Uuid
+  article     Article       @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  parentId    String?       @map("parent_id") @db.Uuid
+  parent      Comment?      @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies     Comment[]     @relation("CommentReplies")
+  authorName  String        @map("author_name")
+  authorEmail String?       @map("author_email")
+  content     String
+  status      CommentStatus @default(pending)
+  ipHash      String?       @map("ip_hash")
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([articleId, status])
+  @@index([status, createdAt(sort: Desc)])
+  @@map("comments")
+}
+
+model Reaction {
+  id           String       @id @default(uuid()) @db.Uuid
+  articleId    String       @map("article_id") @db.Uuid
+  article      Article      @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  reactionType ReactionType @map("reaction_type")
+  fingerprint  String
+  ipHash       String       @map("ip_hash")
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz
+
+  @@unique([articleId, reactionType, fingerprint])
+  @@index([articleId])
+  @@map("reactions")
+}
+
+model Subscriber {
+  id            String   @id @default(uuid()) @db.Uuid
+  email         String   @unique
+  confirmed     Boolean  @default(true)
+  confirmToken  String?  @map("confirm_token")
+  subscribedAt  DateTime @default(now()) @map("subscribed_at") @db.Timestamptz
+  ipHash        String?  @map("ip_hash")
+
+  @@map("subscribers")
 }
