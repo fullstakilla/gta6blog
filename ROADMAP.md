@@ -1,0 +1,127 @@
+# GTA6·БЛОГ — Roadmap до MVP
+
+Живой документ. Обновляется после каждой итерации. Источник правды по
+статусу проекта — тут, а не в скиллах (там — «как устроено», здесь — «что
+осталось»).
+
+**Легенда:** ✅ сделано · 🚧 в работе · ⏳ ждёт · ❌ отброшено
+
+---
+
+## Готово
+
+- ✅ Каркас: Next.js 16 + Prisma 7 + PostgreSQL 16 + iron-session
+- ✅ Дизайн-система (brutalist, токены, шрифты Space Grotesk / Inter / JetBrains Mono)
+- ✅ Полная русификация UI
+- ✅ Публичные страницы: `/`, `/blog`, `/blog/[slug]`, `/gallery`, `/guide`, `/guide/[section]`, `/about`, `/privacy`, `/cookies`, `not-found`
+- ✅ `(public)` route group + PublicChrome (TopBar / Header / Footer / Splash / ExitIntent / MiniTimer / ProgressBar / CookieBanner)
+- ✅ Админка: `/admin/login`, `/admin`, `/admin/articles/new`, `/admin/articles/[id]`
+- ✅ Article CRUD (Server Actions с zod, транзакция для `is_featured`)
+- ✅ Image upload (`/api/admin/upload`, whitelist MIME, 8 MB)
+- ✅ WYSIWYG-редактор — BlockNote с русской локалью и dark theme
+- ✅ SEO: `metadataBase`, `sitemap.ts`, `robots.ts`, `manifest.ts`, JSON-LD Article + WebSite + Organization
+- ✅ Security helpers: `lib/rate-limit.ts` (in-memory), `lib/request.ts` (IP-hash, fingerprint), `lib/sanitize.ts`
+- ✅ Security headers в `next.config.ts` (X-Frame, nosniff, Referrer-Policy, Permissions-Policy, HSTS в проде)
+- ✅ `requireAdmin()` во всех admin Server Actions
+- ✅ Cookie consent banner
+- ✅ Git репо на GitHub: [fullstakilla/gta6blog](https://github.com/fullstakilla/gta6blog)
+
+---
+
+## P0 — блокеры запуска
+
+Без этих пунктов запускать нельзя.
+
+- [ ] **Комментарии**
+  - [ ] Таблица `comments` (в схеме [data-model](.claude/skills/data-model/SKILL.md), нужна миграция)
+  - [ ] Server Action `createComment` (zod + `sanitizeComment` + rate limit 3/мин)
+  - [ ] Форма на `/blog/[slug]` (name + email опционально + content)
+  - [ ] Nested-рендер до 3 уровней
+  - [ ] `/admin/comments?status=pending` с bulk approve/reject/spam
+- [ ] **Реакции** 🔥 ❤️ 😂 🤔 💯
+  - [ ] Таблица `reactions` (миграция)
+  - [ ] Компонент `<ReactionBar articleId>` под статьёй
+  - [ ] Server Action `toggleReaction` (fingerprint-дедуп, rate 10/мин)
+  - [ ] Оптимистичные счётчики
+- [ ] **Подписка email рабочая**
+  - [ ] Таблица `subscribers` (миграция)
+  - [ ] Server Action `subscribeEmail` (zod + rate 5/час)
+  - [ ] Форма Subscribe + ExitIntent завязана на action
+  - [ ] `/admin/subscribers` — список + экспорт CSV
+  - [ ] (опционально в P0) double opt-in через email — можно перенести в P1
+- [ ] **`README.md` + `frontend/.env.example`**
+  - [ ] Инструкция клона + запуска (createdb, prisma migrate, seed, npm run dev)
+  - [ ] Плейсхолдеры для env-vars без секретов
+- [ ] **Деплой**
+  - [ ] Выбрать хостинг (Vercel / self-host Docker / Railway / Fly.io) — решение отдельно
+  - [ ] Настроить production Postgres
+  - [ ] `IRON_SESSION_SECRET`, `IP_HASH_SALT`, `DATABASE_URL`, `NEXT_PUBLIC_SITE_URL` в prod env
+  - [ ] HTTPS + auto-renew
+  - [ ] Backup Postgres (cron `pg_dump`, ротация 30 дней) + backup `public/uploads/`
+
+---
+
+## P1 — важно, можно после запуска
+
+- [ ] **Галерея из БД**
+  - [ ] Таблица `gallery_items` (миграция)
+  - [ ] `/admin/gallery` — CRUD с upload
+  - [ ] `/gallery` переключить с моков на fetch из БД
+- [ ] **TrendingBar из БД**
+  - [ ] Query по last-hour просмотрам
+  - [ ] Cache 60s
+- [ ] **View tracking**
+  - [ ] Таблица `article_views` (миграция)
+  - [ ] Server Action `trackView({articleId})` — дедуп 10 мин по IP-хэшу
+  - [ ] Вызов из клиента при монтировании страницы статьи
+  - [ ] Инкремент `articles.views_count` (денормализация)
+- [ ] **`next/image` вместо `<img>` для обложек** — оптимизация
+- [ ] **Mobile audit** — прогнать все страницы на 375px, поправить проблемные
+- [ ] **`loading.tsx` / `error.tsx`** — глобальные skeleton + error boundary
+- [ ] **Смена пароля админа из UI** — форма `/admin/settings/password`
+- [ ] **Яндекс.Метрика + Вебмастер + Google Search Console**
+- [ ] **Double opt-in для подписки** (если не сделан в P0)
+
+---
+
+## P2 — приятные бонусы
+
+- [ ] **RSS-фид** `/rss.xml`
+- [ ] **Автосохранение draft** в редакторе (debounce 5s)
+- [ ] **Feature flags** через env (`NEXT_PUBLIC_COMMENTS_ENABLED` и т.п.)
+- [ ] **Search на `/blog?q=`** — простой `WHERE title ILIKE '%q%'`
+- [ ] **Email провайдер** (Resend / Yandex SMTP) для рассылки
+- [ ] **`/admin/settings`** — общая страница настроек
+- [ ] **Sentry** для отслеживания ошибок в проде
+- [ ] **Uptime мониторинг** (UptimeRobot, betterstack)
+- [ ] **CI/CD** (GitHub Actions: lint + build на PR)
+
+---
+
+## Явно отброшено (для памяти)
+
+- ❌ Go бэкенд (ADR-001 — заменён на Next.js all-in)
+- ❌ Личный кабинет / регистрация пользователей (не в MVP)
+- ❌ Форум / треды
+- ❌ Интерактивная карта Vice City
+- ❌ База транспорта / оружия / персонажей как data-объекты
+- ❌ Мобильное приложение, мерч, донаты
+- ❌ Мультиязычность и светлая тема
+- ❌ Страницы авторов (кроме имени в статье)
+- ❌ Рекомендательная система
+- ❌ Полнотекстовый поиск (только простой LIKE)
+
+---
+
+## Оценка времени
+
+- P0 = **2-3 сессии** (комменты+реакции+подписка = 1, README+env = 0.25, деплой = 1-2 отдельно)
+- P1 = **1 сессия** плотной работы
+- P2 = по желанию, не блокирует
+
+## Cross-references
+
+- Архитектурные решения → [decisions](.claude/skills/decisions/SKILL.md)
+- Схема БД → [data-model](.claude/skills/data-model/SKILL.md)
+- Server Actions / API → [api-contract](.claude/skills/api-contract/SKILL.md)
+- Продуктовое позиционирование → [product](.claude/skills/product/SKILL.md)
