@@ -1,8 +1,5 @@
 export const RELEASE_DATE = "2026-05-26T00:00:00Z";
 
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
-
 export const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://gta6-blog.ru";
 

@@ -6,9 +6,9 @@
 
 **Обновлено:** 2026-09-03 · **Легенда:** ✅ сделано · 🚧 в работе · ⏳ ждёт · 🅿️ отложено · ❌ отброшено
 
-**Прогресс P0:** 3 из 5 блоков закрыто. Осталось: README (активно) + деплой (отложен).
+**Прогресс P0:** 4 из 5 блоков закрыто. Остался только деплой (отложен).
 
-**Что дальше:** README.md + `frontend/.env.example`. После — берём P1.
+**Что дальше:** P1 — галерея из БД, TrendingBar из БД, view tracking, `next/image`, mobile audit, `loading.tsx`/`error.tsx`.
 
 ---
 
@@ -30,6 +30,7 @@
 - ✅ Cookie consent banner
 - ✅ Git репо на GitHub: [fullstakilla/gta6blog](https://github.com/fullstakilla/gta6blog)
 - ✅ Комментарии, реакции, подписка (Ф3) — таблицы, Server Actions, публичный UI, admin-модерация
+- ✅ README.md + `.env.example` (клон-и-запусти инструкция)
 
 ---
 
@@ -54,9 +55,9 @@
   - [x] Форма Subscribe + ExitIntent завязана на action
   - [x] `/admin/subscribers` — список + экспорт CSV (`/api/admin/subscribers.csv`)
   - [ ] Double opt-in через email — перенесён в P1
-- [ ] **`README.md` + `frontend/.env.example`**
-  - [ ] Инструкция клона + запуска (createdb, prisma migrate, seed, npm run dev)
-  - [ ] Плейсхолдеры для env-vars без секретов
+- [x] **`README.md` + `frontend/.env.example`**
+  - [x] Инструкция клона + запуска (createdb, prisma migrate, seed, npm run dev)
+  - [x] Плейсхолдеры для env-vars без секретов
 - [ ] 🅿️ **Деплой** — решено 2026-09-03 отложить: сначала добить P1
       (мобилка, галерея из БД, view tracking, `next/image`, `loading`/`error`).
       Заходим сюда, когда контент и полировка готовы, чтобы не деплоить дважды.
@@ -122,7 +123,7 @@
 
 ## Оценка времени
 
-- **P0 активный остаток:** README + `.env.example` = **0.25 сессии**
+- **P0 активный остаток:** нет — всё сделано
 - **P0 отложено:** деплой = **1-2 сессии** — вернёмся после P1
 - **P1** = **1 сессия** плотной работы
 - **P2** = по желанию, не блокирует запуск
