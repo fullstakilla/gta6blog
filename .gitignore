@@ -1,0 +1,23 @@
+# macOS
+.DS_Store
+
+# env / secrets
+.env
+.env.*
+!.env.example
+
+# uploads
+frontend/public/uploads/
+
+# node
+node_modules/
+
+# next
+.next/
+out/
+
+# prisma generated client
+frontend/src/generated/
+
+# logs
+*.log

@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ArticleTag {
+  TRAILER
+  LEAK
+  MAP
+  CHARACTER
+  GAMEPLAY
+  RUMOR
+}
+
+enum ArticleStatus {
+  draft
+  published
+  archived
+}
+
+enum AuthorRole {
+  author
+  editor
+  admin
+}
+
+model Author {
+  id           String    @id @default(uuid()) @db.Uuid
+  name         String
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  role         AuthorRole @default(author)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  articles     Article[]
+
+  @@map("authors")
+}
+
+model Article {
+  id          String        @id @default(uuid()) @db.Uuid
+  slug        String        @unique
+  title       String
+  excerpt     String?
+  content     String
+  coverImage  String?       @map("cover_image")
+  category    ArticleTag
+  tags        String[]      @default([])
+  authorId    String?       @map("author_id") @db.Uuid
+  author      Author?       @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  status      ArticleStatus @default(draft)
+  publishedAt DateTime?     @map("published_at") @db.Timestamptz
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+  viewsCount  BigInt        @default(0) @map("views_count")
+  metaTitle   String?       @map("meta_title")
+  metaDesc    String?       @map("meta_desc")
+  isFeatured  Boolean       @default(false) @map("is_featured")
+
+  @@index([slug])
+  @@index([publishedAt(sort: Desc)])
+  @@index([tags], type: Gin)
+  @@map("articles")
+}
