@@ -228,6 +228,7 @@ docker logs gta6-caddy 2>&1 | tail -50
 
 ### Watchtower
 
+- Image: **`nickfedor/watchtower:latest`** (активный форк, `containrrr/watchtower` заброшен в 2024, у него API 1.25 несовместимый с новыми Docker daemon)
 - Poll interval: **5 минут**
 - `--cleanup` — удаляет старые образы после апдейта
 - `--label-enable` — обновляет только контейнеры с `com.centurylinklabs.watchtower.enable=true`
@@ -236,10 +237,31 @@ docker logs gta6-caddy 2>&1 | tail -50
 
 **Форсировать проверку немедленно** (не ждать 5 мин):
 ```bash
-docker exec gta6-watchtower /watchtower --run-once --label-enable
-# или проще:
 docker compose pull nextjs && docker compose up -d nextjs
 ```
+
+### Log rotation
+
+Все сервисы используют `json-file` driver с `max-size: 10m, max-file: 3` — не более 30 MB логов на контейнер. Задано через YAML-anchor `&default-logging` в `docker-compose.yml`. Без этого Docker логи растут бесконечно (по умолчанию без лимита) и могут забить диск.
+
+### Docker cleanup cron
+
+```
+0 4 * * 0  docker system prune -f --filter until=168h >> /var/log/docker-prune.log 2>&1
+```
+
+Раз в неделю (воскресенье 4:00) удаляются образы/контейнеры/сети старше 7 дней. **Volumes НЕ трогает** — данные Postgres/MinIO в безопасности. Логи в `/var/log/docker-prune.log`.
+
+### Rollback nextjs на предыдущую версию
+
+`docker-compose.yml` использует `image: ghcr.io/fullstakilla/gta6blog:${NEXTJS_TAG:-latest}` — можно pinить конкретный SHA-тег через env.
+
+```bash
+/opt/gta6/rollback.sh sha-1337675   # откат на конкретный коммит
+/opt/gta6/rollback.sh latest        # вернуть auto-updates через Watchtower
+```
+
+Скрипт пуляет образ, обновляет `NEXTJS_TAG` в `/opt/gta6/.env`, пересоздаёт `gta6-nextjs`. Когда `NEXTJS_TAG≠latest` — Watchtower **не** трогает контейнер (тег не совпадает). Список доступных тегов: https://github.com/fullstakilla/gta6blog/pkgs/container/gta6blog
 
 ### Firewall (UFW)
 

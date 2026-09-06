@@ -1,0 +1,120 @@
+# Reference-копия compose-файла с VPS (/opt/gta6/docker-compose.yml).
+# Синхронизируется вручную. Единственный источник правды — файл на VPS.
+services:
+  postgres:
+    image: postgres:16
+    container_name: gta6-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: gta6
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: gta6_blog
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./pg-data:/var/lib/postgresql/data
+      - ./pg-ssl/server.crt:/etc/ssl/certs/server.crt:ro
+      - ./pg-ssl/server.key:/etc/ssl/private/server.key:ro
+    command: >
+      postgres
+      -c ssl=on
+      -c ssl_cert_file=/etc/ssl/certs/server.crt
+      -c ssl_key_file=/etc/ssl/private/server.key
+      -c max_connections=200
+      -c shared_buffers=256MB
+      -c log_min_duration_statement=1000
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gta6 -d gta6_blog"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging: &default-logging
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  minio:
+    image: minio/minio:latest
+    container_name: gta6-minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ./minio-data:/data
+    command: server /data --console-address ":9001"
+    expose:
+      - "9000"
+      - "9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging: *default-logging
+
+  nextjs:
+    # NEXTJS_TAG — можно pinить конкретный sha-тег для отката (см. rollback.sh)
+    image: ghcr.io/fullstakilla/gta6blog:${NEXTJS_TAG:-latest}
+    container_name: gta6-nextjs
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://gta6:${POSTGRES_PASSWORD}@postgres:5432/gta6_blog?sslmode=require&uselibpqcompat=true&connection_limit=10
+      IRON_SESSION_SECRET: ${IRON_SESSION_SECRET}
+      IP_HASH_SALT: ${IP_HASH_SALT}
+      NEXT_PUBLIC_SITE_URL: https://gta6blog.ru
+      S3_ENDPOINT: https://gta6media.duckdns.org
+      S3_REGION: us-east-1
+      S3_BUCKET: gta6-uploads
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    expose:
+      - "3000"
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    logging: *default-logging
+
+  watchtower:
+    # nickfedor/watchtower — активный форк заброшенного containrrr/watchtower
+    image: nickfedor/watchtower:latest
+    container_name: gta6-watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /root/.docker/config.json:/config.json:ro
+    command:
+      - --cleanup
+      - --label-enable
+      - --interval
+      - "300"
+    logging: *default-logging
+
+  caddy:
+    image: caddy:2
+    container_name: gta6-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy-data:/data
+      - ./caddy-config:/config
+    depends_on:
+      - minio
+      - nextjs
+    logging: *default-logging

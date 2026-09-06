@@ -6,7 +6,7 @@
 
 **Обновлено:** 2026-09-06 · **Легенда:** ✅ сделано · 🚧 в работе · ⏳ ждёт · 🅿️ отложено · ❌ отброшено
 
-**Прогресс:** P0 — 5/5 ✅. P1 — всё закрыто. P2 — RSS + CI закрыты. Плюс полный переезд с Vercel на self-hosted Docker.
+**Прогресс:** P0 — 5/5 ✅. P1 — всё закрыто. P2 — RSS + CI закрыты. Плюс полный переезд с Vercel на self-hosted Docker + операционные полировки (log rotation, prune cron, rollback).
 
 **🎉 MVP запущен:** https://gta6blog.ru (SSL A+, self-hosted, работает у всех РФ-провайдеров)
 
@@ -71,8 +71,11 @@
   - [x] Env: DATABASE_URL, IRON_SESSION_SECRET, IP_HASH_SALT, S3_* — в `/opt/gta6/.env`
   - [x] MinIO S3 upload — end-to-end проверено, картинки публично доступны
   - [x] Домен gta6blog.ru куплен на reg.ru, DNS настроен
-  - [x] CI/CD через GitHub Actions → GHCR → Watchtower на VPS auto-pull
+  - [x] CI/CD через GitHub Actions → GHCR → Watchtower (nickfedor fork) на VPS auto-pull
   - [x] Работает у всех РФ-провайдеров (включая мобильных)
+  - [x] Docker log rotation (json-file 10m × 3 на всех сервисах)
+  - [x] Weekly `docker system prune` cron (воскресенье 4:00)
+  - [x] `rollback.sh <sha-tag>` — pin nextjs на конкретный образ, снимает Watchtower auto-update
   - [ ] Яндекс.Метрика — код счётчика в root layout
   - [ ] Яндекс.Вебмастер — verify + submit sitemap
   - [ ] Google Search Console — verify + submit sitemap
