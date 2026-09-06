@@ -255,7 +255,7 @@ export async function publishArticle(id: string) {
 | Sanitize HTML комментов | Server Action (`sanitize-html`) |
 | Транслит slug | Client (при вводе, `slugify`) + Server Action (при отсутствии в input) |
 | Автосохранение draft | Client (debounce 5s → Server Action) — планируется |
-| Upload картинок | Route Handler `POST /api/admin/upload` → `public/uploads/YYYY-MM/<hex>.<ext>` → URL сохраняется как `article.coverImage`. Лимит 8MB, whitelist MIME (jpg/png/webp/avif/gif). Позже — переезд на S3-совместимое хранилище. |
+| Upload картинок | Route Handler `POST /api/admin/upload` → PutObject в S3-совместимый бакет через `@aws-sdk/client-s3`. В проде — MinIO на VPS (`gta6media.duckdns.org`). Path `YYYY-MM/<hex>.<ext>`. Публичный URL: `${S3_ENDPOINT}/${S3_BUCKET}/${key}`. Лимит 8MB, whitelist MIME. |
 | Auto-updated_at | Prisma `@updatedAt` |
 | Revalidate | Server Action → `revalidatePath()` inline |
 

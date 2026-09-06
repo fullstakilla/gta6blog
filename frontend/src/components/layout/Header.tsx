@@ -28,6 +28,7 @@ export function Header({ scrolled }: HeaderProps) {
           display: "flex",
           alignItems: "center",
           gap: 32,
+          justifyContent: 'space-between'
         }}
       >
         <Link
@@ -98,18 +99,6 @@ export function Header({ scrolled }: HeaderProps) {
           <Link href="/guide">ВСЁ ЧТО ИЗВЕСТНО</Link>
           <Link href="/about">О ПРОЕКТЕ</Link>
         </nav>
-        <div style={{ flex: 1 }} />
-        <span
-          className="public-header-issue"
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            letterSpacing: "0.14em",
-            color: "var(--color-muted)",
-          }}
-        >
-          12 СЕН 2026 · ВЫПУСК #047
-        </span>
         <Link
           href="/#subscribe"
           style={{

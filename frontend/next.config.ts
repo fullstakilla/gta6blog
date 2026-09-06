@@ -22,9 +22,10 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   images: {
-    // разрешаем next/image брать из локального /uploads и placehold.co (seed)
+    // разрешаем next/image брать с MinIO и placehold.co (seed)
     remotePatterns: [
       { protocol: "https", hostname: "placehold.co" },
+      { protocol: "https", hostname: "gta6media.duckdns.org" },
     ],
   },
   async headers() {
