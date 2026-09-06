@@ -10,7 +10,7 @@
 
 **🎉 MVP запущен:** https://gta6blog.ru (SSL A+, self-hosted, работает у всех РФ-провайдеров)
 
-**Что дальше:** Яндекс.Метрика + Вебмастер + Google Search Console. После — fail2ban на Postgres + backup MinIO-данных.
+**Что дальше:** Sentry для ошибок, backup MinIO (rclone), fail2ban на Postgres.
 
 ---
 
@@ -76,12 +76,12 @@
   - [x] Docker log rotation (json-file 10m × 3 на всех сервисах)
   - [x] Weekly `docker system prune` cron (воскресенье 4:00)
   - [x] `rollback.sh <sha-tag>` — pin nextjs на конкретный образ, снимает Watchtower auto-update
-  - [ ] Яндекс.Метрика — код счётчика в root layout
-  - [ ] Яндекс.Вебмастер — verify + submit sitemap
-  - [ ] Google Search Console — verify + submit sitemap
+  - [x] Яндекс.Метрика (счётчик 112332599, Вебвизор + карта кликов, prod-only)
+  - [x] Яндекс.Вебмастер — верифицирован через HTML-файл, sitemap отправлен, диагностика чистая, обход по счётчику Метрики включён
+  - [x] Google Search Console — верифицирован, sitemap отправлен
   - [ ] Sentry для отслеживания ошибок в проде
+  - [x] Postgres порт 5433 закрыт наружу (bind 127.0.0.1) — доступ через SSH-туннель, fail2ban не нужен
   - [ ] Backup MinIO-данных (rclone в внешнее хранилище)
-  - [ ] fail2ban на неудачные попытки авторизации Postgres
 
 ---
 
