@@ -1,0 +1,50 @@
+# Node / npm
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Next
+.next
+out
+build
+dist
+
+# Env — секреты только через docker env, не в образ
+.env
+.env.*
+!.env.example
+
+# Prisma generated client — генерируется в builder-стадии
+src/generated
+
+# Uploads — идут в MinIO, не в образ
+public/uploads
+
+# Git / IDE
+.git
+.gitignore
+.gitattributes
+.vscode
+.idea
+.claude
+.agents
+
+# Testing / coverage
+coverage
+*.log
+.pytest_cache
+
+# OS
+.DS_Store
+Thumbs.db
+
+# CI / CD / config
+.github
+.next/cache
+
+# Docs (не нужны в образе)
+CLAUDE.md
+AGENTS.md
+skills-lock.json

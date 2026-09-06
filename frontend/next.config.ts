@@ -21,6 +21,9 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Standalone build — упаковывает в .next/standalone/ всё, что нужно для запуска,
+  // включая минимальный слепок node_modules. Используется в Docker (see Dockerfile).
+  output: "standalone",
   images: {
     // разрешаем next/image брать с MinIO и placehold.co (seed)
     remotePatterns: [
