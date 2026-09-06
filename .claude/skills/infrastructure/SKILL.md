@@ -149,15 +149,20 @@ gta6-nextjs (обновился без вмешательства)
 
 ### Postgres 16 в Docker
 
-- Порт наружу: **5433** (внутри `postgres:5432`)
+- Порт: **`127.0.0.1:5433`** — bind только к loopback VPS, снаружи недоступен
 - SSL: self-signed, у клиентов `sslmode=require&uselibpqcompat=true`
 - Auth: `scram-sha-256`
 - Docker-имя: `gta6-postgres`
-- **nextjs подключается по internal сети:** `postgresql://gta6:PASS@postgres:5432/gta6_blog?...`
-- Внешний доступ (напр. для миграций с моего Mac):
+- **nextjs подключается по internal Docker-сети:** `postgresql://gta6:PASS@postgres:5432/gta6_blog?...`
+- **Внешний доступ (для миграций Prisma с локальной машины) — только через SSH-туннель:**
   ```bash
-  psql "sslmode=require host=5.180.172.132 port=5433 user=gta6 dbname=gta6_blog"
+  # Терминал 1 — держим туннель открытым:
+  ssh -L 5433:localhost:5433 root@5.180.172.132 -N
+
+  # Терминал 2 — миграция как на localhost:
+  DATABASE_URL='postgresql://gta6:PASS@localhost:5433/gta6_blog?sslmode=require&uselibpqcompat=true' npx prisma migrate deploy
   ```
+- **Почему loopback, а не открытый порт + fail2ban:** пароль защищает, но открытый 5433 = поверхность атаки для брутфорса (боты сканят рунет по типовым портам, забивают CPU и логи). Loopback полностью убирает атаку.
 
 ### Next.js в Docker
 
@@ -270,8 +275,9 @@ Status: active
 22/tcp      ALLOW   Anywhere      # SSH
 80/tcp      ALLOW   Anywhere      # Caddy HTTP (для Let's Encrypt challenge)
 443/tcp     ALLOW   Anywhere      # Caddy HTTPS
-5433/tcp    ALLOW   Anywhere      # Postgres (⚠️ открыт — пароль защищает)
 ```
+
+Postgres 5433 **закрыт снаружи** — Docker привязывает его к `127.0.0.1:5433`. Доступ только через SSH-туннель (см. секцию Postgres выше).
 
 ### Backup
 
@@ -306,8 +312,9 @@ DATABASE_URL='postgresql://gta6:PASS@5.180.172.132:5433/gta6_blog?sslmode=requir
 **Стратегия деплоя новой миграции:**
 1. Локально `prisma migrate dev --name X` → создаётся миграция + применена локально
 2. Коммит + push → GitHub Actions билдит новый Docker образ
-3. Из локальной машины сразу: `DATABASE_URL='<prod>' npx prisma migrate deploy`
-4. Watchtower через ~5 мин подхватит новый образ и рестартит nextjs
+3. **В отдельном терминале открыть SSH-туннель к Postgres:** `ssh -L 5433:localhost:5433 root@5.180.172.132 -N`
+4. **Применить миграцию через туннель:** `DATABASE_URL='postgresql://gta6:PASS@localhost:5433/gta6_blog?sslmode=require&uselibpqcompat=true' npx prisma migrate deploy`
+5. Watchtower через ~5 мин подхватит новый образ и рестартит nextjs
 
 **Для безопасности:** делать миграции **backward-compatible** (adding columns, not dropping). Тогда порядок деплой→миграция не критичен.
 

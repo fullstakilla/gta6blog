@@ -11,7 +11,10 @@ services:
       POSTGRES_DB: gta6_blog
       POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
     ports:
-      - "5433:5432"
+      # Bind только к loopback VPS — снаружи недоступен.
+      # Доступ извне только через SSH-туннель:
+      #   ssh -L 5433:localhost:5433 root@5.180.172.132 -N
+      - "127.0.0.1:5433:5432"
     volumes:
       - ./pg-data:/var/lib/postgresql/data
       - ./pg-ssl/server.crt:/etc/ssl/certs/server.crt:ro
