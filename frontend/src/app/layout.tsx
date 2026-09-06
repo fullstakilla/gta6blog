@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Space_Grotesk, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { StructuredData } from "@/components/seo/StructuredData";
+import { YandexMetrika } from "@/components/seo/YandexMetrika";
 import { organizationJsonLd, websiteJsonLd } from "@/lib/seo";
 import { SITE_URL } from "@/lib/constants";
 
@@ -59,6 +60,7 @@ export default function RootLayout({
     <html lang="ru" className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable}`}>
       <body>
         <StructuredData data={[websiteJsonLd, organizationJsonLd]} />
+        <YandexMetrika />
         <div
           aria-hidden
           style={{
