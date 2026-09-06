@@ -5,7 +5,16 @@ import { useCountdown } from "@/hooks/useCountdown";
 import { RELEASE_DATE, LS_KEYS } from "@/lib/constants";
 import { subscribeEmail } from "@/app/(public)/actions";
 
-export function Subscribe() {
+function pluralSubscribers(n: number): string {
+  const mod100 = n % 100;
+  const mod10 = n % 10;
+  if (mod100 >= 11 && mod100 <= 14) return "подписчиков";
+  if (mod10 === 1) return "подписчик";
+  if (mod10 >= 2 && mod10 <= 4) return "подписчика";
+  return "подписчиков";
+}
+
+export function Subscribe({ subscribersCount }: { subscribersCount: number }) {
   const { days: daysUntil } = useCountdown(RELEASE_DATE);
   const [status, setStatus] = useState<
     { kind: "idle" } | { kind: "success"; already: boolean } | { kind: "error"; message: string }
@@ -156,31 +165,11 @@ export function Subscribe() {
               paddingTop: 20,
             }}
           >
-{"// "}12 847 подписчиков · {daysUntil} дней до релиза
-          </div>
-        </div>
-        <div
-          style={{
-            flex: "0 1 300px",
-            display: "flex",
-            justifyContent: "flex-end",
-          }}
-        >
-          <div
-            style={{
-              border: "1px dashed var(--color-border-default)",
-              width: 300,
-              height: 250,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.3em",
-              color: "var(--color-muted)",
-            }}
-          >
-РЕКЛАМА · 300×250
+{"// "}
+{subscribersCount > 0
+  ? `${subscribersCount.toLocaleString("ru-RU")} ${pluralSubscribers(subscribersCount)} · `
+  : ""}
+{daysUntil} дней до релиза
           </div>
         </div>
       </div>

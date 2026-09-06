@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getGuideStats } from "@/lib/api";
+
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "Всё, что известно о GTA VI",
   description:
-    "Единый источник правды: 47 подтверждённых фактов, 23 надёжные утечки, 12 официальных трейлеров.",
+    "Единый источник правды: подтверждённые факты, утечки и трейлеры Grand Theft Auto VI.",
   alternates: { canonical: "/guide" },
 };
 
@@ -39,7 +42,11 @@ const SECTIONS = [
   },
 ];
 
-export default function GuidePage() {
+export default async function GuidePage() {
+  const stats = await getGuideStats();
+  const updatedStr = stats.updatedAt
+    ? new Intl.DateTimeFormat("ru-RU", { dateStyle: "short" }).format(stats.updatedAt)
+    : "—";
   return (
     <section
       style={{
@@ -82,9 +89,9 @@ export default function GuidePage() {
             marginTop: 32,
           }}
         >
-          47 подтверждённых фактов, 23 надёжные утечки, 12 официальных
-          трейлеров. Единый источник правды о главной игре десятилетия.
-          Обновляется, когда появляется что-то важное.
+          Единый источник правды о главной игре десятилетия — подтверждённые
+          факты, надёжные утечки и официальные трейлеры. Обновляется, когда
+          появляется что-то важное.
         </p>
       </div>
 
@@ -101,10 +108,10 @@ export default function GuidePage() {
           color: "var(--color-muted)",
         }}
       >
-        <div>ФАКТОВ · 47</div>
-        <div>УТЕЧЕК · 23</div>
-        <div>ТРЕЙЛЕРОВ · 12</div>
-        <div>ОБНОВЛЕНО · 12.09.2026</div>
+        <div>ФАКТОВ · {stats.facts}</div>
+        <div>УТЕЧЕК · {stats.leaks}</div>
+        <div>ТРЕЙЛЕРОВ · {stats.trailers}</div>
+        <div>ОБНОВЛЕНО · {updatedStr}</div>
       </div>
 
       <div style={{ height: 2, background: "var(--color-accent)", width: "100%" }} />

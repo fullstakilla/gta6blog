@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CONTACT_EMAIL, PRIVACY_UPDATED_AT_HUMAN } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "Политика конфиденциальности",
@@ -44,13 +45,16 @@ export default function PrivacyPage() {
       </h1>
 
       <p style={{ color: "var(--color-muted)", fontSize: 13, marginBottom: 32 }}>
-        Действует с 3 сентября 2026 года.
+        Действует с {PRIVACY_UPDATED_AT_HUMAN} года.
       </p>
 
       <Section title="1. Кто мы">
         <p>
           Оператор — редакция GTA6·БЛОГ, независимый фан-сайт. Не является
-          юридическим лицом. Контакт: hello@gta6blog.ru.
+          юридическим лицом.
+          {CONTACT_EMAIL
+            ? ` Контакт: ${CONTACT_EMAIL}.`
+            : " Обратная связь — через форму комментариев на любой странице."}
         </p>
       </Section>
 
@@ -105,8 +109,11 @@ export default function PrivacyPage() {
         <ul>
           <li>Отписаться от рассылки в любой момент (ссылка в каждом письме).</li>
           <li>
-            Попросить удалить ваш комментарий или email — напишите на
-            hello@gta6blog.ru.
+            Попросить удалить ваш комментарий или email —{" "}
+            {CONTACT_EMAIL
+              ? `напишите на ${CONTACT_EMAIL}`
+              : "оставьте комментарий с пометкой «удалить данные» на любой статье"}
+            .
           </li>
           <li>Получить копию хранимых о вас данных по запросу.</li>
         </ul>

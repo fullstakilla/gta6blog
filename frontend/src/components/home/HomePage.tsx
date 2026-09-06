@@ -6,14 +6,17 @@ import { FromArchive } from "./FromArchive";
 import { CountdownTracker } from "./CountdownTracker";
 import { GalleryTeaser } from "./GalleryTeaser";
 import { Subscribe } from "./Subscribe";
+import type { GuideStats } from "@/lib/api";
 
 interface HomePageProps {
   hero: EditorialHeroProps["hero"];
   articles: LatestArticle[];
   archive: LatestArticle[];
+  guideStats: GuideStats;
+  subscribersCount: number;
 }
 
-export function HomePage({ hero, articles, archive }: HomePageProps) {
+export function HomePage({ hero, articles, archive, guideStats, subscribersCount }: HomePageProps) {
   const accent = "var(--color-accent)";
 
   return (
@@ -79,7 +82,7 @@ export function HomePage({ hero, articles, archive }: HomePageProps) {
                 margin: "12px 0 0",
               }}
             >
-              47 фактов · 23 утечки · 12 трейлеров — единый источник правды.
+              {guideStats.facts} фактов · {guideStats.leaks} утечек · {guideStats.trailers} трейлеров — единый источник правды.
             </p>
           </div>
           <Link
@@ -104,7 +107,7 @@ export function HomePage({ hero, articles, archive }: HomePageProps) {
       </section>
 
       <GalleryTeaser />
-      <Subscribe />
+      <Subscribe subscribersCount={subscribersCount} />
 
       <style>{`
         @media (max-width: 700px) {

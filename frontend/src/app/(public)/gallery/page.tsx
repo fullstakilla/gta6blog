@@ -76,11 +76,8 @@ export default async function GalleryPage() {
             color: "var(--color-muted)",
           }}
         >
-          Пока пусто. Загружайте изображения в{" "}
-          <a href="/admin/gallery" style={{ color: "var(--color-accent)" }}>
-            /admin/gallery
-          </a>
-          .
+          Галерея пока пуста. Возвращайтесь позже —{" "}
+          скоро появятся кадры трейлеров, концепты и скриншоты.
         </div>
       ) : (
         <GalleryClient items={items} />

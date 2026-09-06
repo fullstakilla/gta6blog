@@ -2,7 +2,7 @@
 
 import { Countdown } from "@/components/primitives/Countdown";
 import { useCountdown } from "@/hooks/useCountdown";
-import { RELEASE_DATE } from "@/lib/constants";
+import { RELEASE_DATE, RELEASE_DATE_HUMAN } from "@/lib/constants";
 
 export function CountdownTracker() {
   const t = useCountdown(RELEASE_DATE);
@@ -57,7 +57,7 @@ export function CountdownTracker() {
               maxWidth: "38ch",
             }}
           >
-            Каждая секунда до 26 мая 2026 — это ещё один кадр из трейлера,
+            Каждая секунда до {RELEASE_DATE_HUMAN} — это ещё один кадр из трейлера,
             ещё одна утечка, ещё один разбор. Мы следим за всеми.
           </p>
           <a
