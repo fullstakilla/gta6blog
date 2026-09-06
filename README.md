@@ -165,31 +165,31 @@ npm run lint    # ESLint
 
 ## Deploy
 
-**Live:** https://gta6blog.ru (SSL Labs A+)
+**Live:** https://gta6blog.ru (SSL Labs A+, HTTP/3, self-hosted)
 
-**Топология:**
+**Топология (всё на одном VPS):**
 ```
-Клиент → Caddy на VPS (Хельсинки, Let's Encrypt) → Vercel (fra1) → Next.js
-                        │
-                        ├─→ MinIO (S3 API, обложки статей)
-                        │
-                        └─→ Postgres 16 (Vercel-функции ходят напрямую)
+Клиент → Caddy (:443, TLS Let's Encrypt) → Docker network:
+                                            ├─ nextjs:3000 (наш образ из GHCR)
+                                            ├─ postgres:5432
+                                            └─ minio:9000 (через отдельный домен gta6media.duckdns.org)
 ```
 
-- **Vercel Hobby** (region `fra1` Frankfurt) — Next.js app
-- **VPS** (5.180.172.132, Ubuntu 24.04) — Postgres 16 + MinIO + Caddy в Docker
-- **Reverse-proxy** через Caddy на VPS для клиентского трафика — обход DPI-фильтрации Vercel-IP у части РФ-провайдеров (см. [ADR-014](.claude/skills/decisions/SKILL.md))
+- **VPS** (5.180.172.132, Ubuntu 24.04, Хельсинки) — весь стек в Docker Compose
+- **Никакого Vercel** — переехали 2026-09-06 из-за DPI-фильтров в РФ (см. [ADR-016](.claude/skills/decisions/SKILL.md))
+- **CI/CD:** git push → GitHub Actions билдит Docker образ → GHCR → Watchtower на VPS автопулит и рестартит (~5 мин от push до прода)
 
-Подробнее: [.claude/skills/infrastructure/SKILL.md](.claude/skills/infrastructure/SKILL.md) — полная схема,
-env-переменные, backup/restore, troubleshooting.
-Архитектурные решения — [ADR-011..015](.claude/skills/decisions/SKILL.md).
+Подробнее: [.claude/skills/infrastructure/SKILL.md](.claude/skills/infrastructure/SKILL.md) — полная схема, env-переменные, backup/restore, troubleshooting.
+Архитектурные решения — [ADR-011..016](.claude/skills/decisions/SKILL.md).
 
 ### Deploy pipeline
 
-- Push в `main` → GitHub Actions CI (lint + build) → Vercel auto-deploy
-- **Commit author должен быть `121338834+fullstakilla@users.noreply.github.com`** (Vercel Hobby ограничение)
-- Прод-миграции: локально `DATABASE_URL='<prod>' npx prisma migrate deploy`
-- Backup Postgres: cron `0 3 * * *` на VPS в `/opt/gta6/backups/`, ротация 30 дней
+- Push в `main` → GitHub Actions:
+  - `ci.yml` — lint + build (быстрая валидация)
+  - `docker.yml` — Docker образ → push в `ghcr.io/fullstakilla/gta6blog:latest`
+- Watchtower на VPS: раз в 5 мин проверяет GHCR, автопулит новый образ, рестартит `gta6-nextjs`
+- Прод-миграции Prisma: локально `DATABASE_URL='<prod>' npx prisma migrate deploy` — **обязательно вручную перед деплоем**, если миграция ломает совместимость
+- Backup Postgres: cron `0 3 * * *` → `/opt/gta6/backups/`, ротация 30 дней
 
 ---
 

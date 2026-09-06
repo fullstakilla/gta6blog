@@ -1,73 +1,66 @@
 ---
 name: infrastructure
-description: Прод-инфраструктура GTA6·БЛОГ — где что крутится (Vercel + VPS), схема сети, credentials, backup/restore, disaster recovery, troubleshooting. Триггерь при любом вопросе про деплой, prod-БД, MinIO, upload картинок, домены, DNS, TLS, бэкапы, восстановление после падений, миграции в проде, ENV-переменные Vercel.
+description: Прод-инфраструктура GTA6·БЛОГ — что где крутится (всё на своём VPS в Docker), схема сети, credentials, backup/restore, disaster recovery, troubleshooting, CI/CD flow. Триггерь при любом вопросе про деплой, прод-БД, MinIO, upload картинок, домены, DNS, TLS, бэкапы, восстановление после падений, миграции в проде, docker-compose, GitHub Actions build/push.
 ---
 
 # Инфраструктура GTA6·БЛОГ
 
-**Гибридная схема:** веб-приложение на Vercel (serverless), данные и медиа на своём VPS. Клиентский трафик идёт через Caddy-прокси на VPS (обход блокировки Vercel-IP в РФ).
+**Self-hosted стек:** всё крутится в Docker Compose на своём VPS. Никакой зависимости от Vercel/облаков. Ранее использовалась Vercel (см. ADR-011/013/014, все SUPERSEDED в ADR-016).
 
 ## Топология
 
 ```
 ┌────────────────────────────────────────────────────────┐
-│           КЛИЕНТ (браузер)                             │
+│           КЛИЕНТ (браузер, любой оператор в РФ)        │
 │           https://gta6blog.ru                          │
 │           DNS: gta6blog.ru → 5.180.172.132             │
 └─────────────────────┬──────────────────────────────────┘
-                      │ HTTPS
+                      │ HTTPS (TLS 1.3, HTTP/3)
                       ▼
-┌────────────────────────────────────────────────────────┐
-│  VPS (Ubuntu 24.04, 2 vCPU, 1.8 GB, IP: 5.180.172.132) │
-│                                                         │
-│  ┌────────────────────────────────────────────────┐   │
-│  │ Caddy (reverse proxy) :80, :443                │   │
-│  │  - TLS termination (Let's Encrypt, A+ рейтинг) │   │
-│  │  - HTTP → HTTPS auto-redirect                  │   │
-│  │  - www.gta6blog.ru → 308 → gta6blog.ru         │   │
-│  │  - HTTP/3 + QUIC + Post-Quantum Crypto         │   │
-│  │                                                 │   │
-│  │  gta6blog.ru      → proxy → gta6blog.vercel.app│   │
-│  │  gta6media...     → proxy → minio:9000          │   │
-│  └───────┬──────────────────────────┬─────────────┘   │
-│          │                          │                  │
-│          │                          ▼                  │
-│          │                ┌─────────────────┐          │
-│          │                │  MinIO :9000    │          │
-│          │                │  S3-compatible  │          │
-│          │                │  bucket:        │          │
-│          │                │  gta6-uploads   │          │
-│          │                └─────────────────┘          │
-│          │                                             │
-│          │  ┌─────────────────────────────────────┐   │
-│          │  │  Postgres 16 :5433                  │   │
-│          │  │  SSL, scram-sha-256, port открыт    │   │
-│          │  │  вовне для Vercel-функций           │   │
-│          │  └───────────────┬─────────────────────┘   │
-│          │                  │                          │
-│  UFW firewall: 22, 80, 443, 5433                       │
-│  Cron: pg_dump 03:00 daily → /opt/gta6/backups/        │
-└──────────┼──────────────────┼──────────────────────────┘
-           │                  │
-           │ HTTPS (SNI+Host  │ TCP + TLS (Prisma pg-adapter)
-           │  = .vercel.app)  │
-           ▼                  ▼
-┌────────────────────────────────────────────────────────┐
-│  Vercel (Hobby, region: fra1 Frankfurt)                │
-│  ┌─────────────────────────────────────────────────┐   │
-│  │  Next.js 16 app                                  │   │
-│  │  ├─ RSC + Server Actions + Route Handlers        │   │
-│  │  ├─ Auto-deploy on push to main                  │   │
-│  │  ├─ Vercel URL: https://gta6blog.vercel.app      │   │
-│  │  └─ Читает Postgres на VPS через открытый интернет│  │
-│  │      (DATABASE_URL с sslmode=require)             │  │
-│  └─────────────────────────────────────────────────┘   │
-└────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────┐
+│  VPS (Ubuntu 24.04, 2 vCPU, 1.8 GB, IP: 5.180.172.132, Хельсинки)  │
+│                                                                     │
+│  Docker Compose stack (/opt/gta6/docker-compose.yml)               │
+│  ┌────────────────────────────────────────────────────────────┐   │
+│  │ gta6-caddy (:80, :443) — reverse proxy                     │   │
+│  │  • TLS termination (Let's Encrypt, A+ рейтинг)             │   │
+│  │  • HTTP → HTTPS auto-redirect                              │   │
+│  │  • www.gta6blog.ru → 308 → gta6blog.ru                     │   │
+│  │  • HTTP/3 + QUIC + Post-Quantum Crypto                     │   │
+│  │  Роутинг:                                                   │   │
+│  │   gta6blog.ru        → nextjs:3000                         │   │
+│  │   gta6media...       → minio:9000                          │   │
+│  └────────┬──────────────────────────┬────────────────────────┘   │
+│           │                          │                              │
+│           ▼                          ▼                              │
+│  ┌────────────────────────┐    ┌───────────────────────┐           │
+│  │ gta6-nextjs :3000       │    │ gta6-minio :9000       │           │
+│  │ Next.js 16 (standalone) │    │ S3-совместимое         │           │
+│  │ Docker: ghcr.io/...    │    │ bucket: gta6-uploads   │           │
+│  │  gta6blog:latest       │    │ (anonymous download)   │           │
+│  │                        │    │                        │           │
+│  │  Читает Postgres       │    │ Хранит обложки статей  │           │
+│  │  через Docker network  │    │ и картинки галереи     │           │
+│  └────────┬───────────────┘    └────────────────────────┘           │
+│           │                                                          │
+│           ▼                                                          │
+│  ┌──────────────────────────────────────────────────────┐           │
+│  │ gta6-postgres :5432 (внутри), :5433 (наружу)         │           │
+│  │ Postgres 16, SSL (self-signed), scram-sha-256         │           │
+│  │ БД: gta6_blog, user: gta6                            │           │
+│  └──────────────────────────────────────────────────────┘           │
+│                                                                     │
+│  gta6-watchtower — раз в 5 мин пуляет ghcr.io/.../gta6blog:latest  │
+│                    и рестартит gta6-nextjs при новом образе        │
+│                                                                     │
+│  UFW firewall: 22, 80, 443, 5433                                    │
+│  Cron: /opt/gta6/backup.sh @ 03:00 daily → pg_dump                 │
+└────────────────────────────────────────────────────────────────────┘
 ```
 
-**Ключевой момент:** клиенты **не ходят напрямую на Vercel**. Все запросы проходят через VPS-прокси. Это обход РКН-фильтров Vercel-диапазонов (см. ADR-014).
+**Всё в Docker, всё на одной машине.** Один VPS = один SPOF, но простая и быстрая эксплуатация.
 
-**Обратный маршрут (Vercel → БД):** Vercel-функции ходят напрямую к Postgres на VPS через открытый интернет. Никакого прокси между Next.js runtime и Postgres нет.
+**Обратный маршрут (Vercel):** больше нет. Все компоненты локально, без внешних зависимостей кроме DNS.
 
 ## Домены
 
@@ -75,7 +68,6 @@ description: Прод-инфраструктура GTA6·БЛОГ — где ч�
 |---|---|---|---|---|
 | `gta6blog.ru` | Основной публичный домен | reg.ru | 5.180.172.132 (VPS) | Caddy + Let's Encrypt (A+) |
 | `www.gta6blog.ru` | 308 redirect → apex | reg.ru | 5.180.172.132 (VPS) | Caddy + Let's Encrypt |
-| `gta6blog.vercel.app` | Vercel origin (для Caddy proxy) | Vercel | Vercel edge | Vercel auto |
 | `gta6media.duckdns.org` | MinIO S3-endpoint | DuckDNS (free) | 5.180.172.132 (VPS) | Caddy + Let's Encrypt |
 
 **DNS-записи на reg.ru для `gta6blog.ru`:**
@@ -85,130 +77,119 @@ A       @       5.180.172.132
 A       www     5.180.172.132
 ```
 
-**НЕ указывать на Vercel IP** — тогда клиенты в РФ будут получать ERR_SSL_VERSION_OR_CIPHER_MISMATCH из-за DPI-фильтров провайдеров.
+---
 
-### Vercel Domains — важный нюанс
+## CI/CD flow
 
-В Vercel Dashboard → Settings → Domains нужно **держать только `gta6blog.vercel.app`**. Домен `gta6blog.ru` **не должен быть привязан к проекту в Vercel Domains** — иначе Vercel будет ожидать что DNS указывает на его IP, а он указывает на нас → возникает конфликт (Vercel то ругается «Invalid Configuration», то серверит 403).
-
-Caddy подменяет заголовок `Host: gta6blog.vercel.app` при проксировании — Vercel маршрутизирует по своему домену как обычно, клиент видит `gta6blog.ru` в URL благодаря `NEXT_PUBLIC_SITE_URL`.
-
-## Vercel
-
-### Настройки проекта
-
-- **Root Directory:** `frontend/` (важно — репа монорепно-подобная)
-- **Framework:** Next.js (auto-detect)
-- **Function Region:** `fra1` (Frankfurt) — минимизирует латентность до VPS
-- **Build Command:** `npm run build` — внутри `prisma generate && next build`
-- **Node Version:** 22
-
-### Environment Variables
-
-Пять секретных (**Sensitive**, скрываются в UI, недоступны в build-логах):
-
-| Var | Пример | Комментарий |
-|---|---|---|
-| `DATABASE_URL` | `postgresql://gta6:PASS@5.180.172.132:5433/gta6_blog?sslmode=require&uselibpqcompat=true&connection_limit=5` | `uselibpqcompat=true` обязателен — иначе Prisma pg-adapter требует `verify-full` при self-signed |
-| `IRON_SESSION_SECRET` | 32+ chars, base64 | Ротация инвалидит все сессии |
-| `IP_HASH_SALT` | 16+ chars, hex | Для sha256(ip+salt) — 152-ФЗ/GDPR |
-| `S3_ACCESS_KEY` | 20 chars hex | App-user MinIO |
-| `S3_SECRET_KEY` | 40 chars hex | App-user MinIO |
-
-Три обычных (**Config / Plaintext**):
-
-| Var | Значение |
-|---|---|
-| `NEXT_PUBLIC_SITE_URL` | `https://gta6blog.ru` |
-| `S3_ENDPOINT` | `https://gta6media.duckdns.org` |
-| `S3_REGION` | `us-east-1` (MinIO использует как формальный tag) |
-| `S3_BUCKET` | `gta6-uploads` |
-
-⚠️ **NEXT_PUBLIC_SITE_URL** — обязательно **Config**, не Sensitive. Vercel блокирует секреты с префиксом `NEXT_PUBLIC_*` (значение всё равно попадает в клиентский бандл).
-
-### Deploy
-
-Автоматически на push в `main`. Vercel Hobby-план имеет **важный нюанс:**
-
-**Commit author должен быть привязан к твоему GitHub-аккаунту.** Иначе:
-> The deployment was blocked because the commit author did not have contributing access to the project
-
-Мой рабочий email — `121338834+fullstakilla@users.noreply.github.com` (GitHub noreply). Настройка локального git:
-```bash
-git config --global user.email "121338834+fullstakilla@users.noreply.github.com"
-git config --global user.name "fullstakilla"
+```
+Разработчик
+    │
+    │ git push main
+    ▼
+GitHub Actions (.github/workflows/)
+    │
+    ├─ ci.yml            — lint + build (валидация PR)
+    │
+    └─ docker.yml        — билдит Docker образ:
+                            npm ci → prisma generate → next build → docker build
+                            → push в ghcr.io/fullstakilla/gta6blog:latest + sha-<hash>
+    │
+    ▼
+GHCR (GitHub Container Registry)
+    │
+    │ private image, доступ по PAT (docker login на VPS)
+    ▼
+Watchtower на VPS (раз в 5 минут)
+    │
+    │ docker pull ghcr.io/fullstakilla/gta6blog:latest
+    │ Если новый образ → docker compose up -d nextjs (zero-downtime rolling)
+    ▼
+gta6-nextjs (обновился без вмешательства)
 ```
 
-⚠️ **НЕ добавлять `Co-Authored-By:` trailer в commit-сообщения** — Vercel Hobby блокирует любой коммит с co-author'ом, не являющимся project-owner'ом.
+**Время от git push до прода:** ~4-6 минут:
+- CI билд Docker образа: 2-3 мин (с кэшем ~1 мин)
+- Watchtower polling delay: до 5 мин (интервал по умолчанию)
 
 ---
 
-## VPS
+## Environment variables
 
-### Доступ
+Все env хранятся в **`/opt/gta6/.env`** (chmod 600), передаются в контейнеры через `docker-compose.yml`:
 
-```bash
-ssh root@5.180.172.132
-```
+| Var | Пример | Где используется |
+|---|---|---|
+| `POSTGRES_PASSWORD` | 48 hex | Postgres init + nextjs DATABASE_URL |
+| `MINIO_ROOT_USER` | `gta6admin` | MinIO root (для admin через `mc`) |
+| `MINIO_ROOT_PASSWORD` | 40 hex | MinIO root |
+| `IRON_SESSION_SECRET` | 32+ chars base64 | Encrypt session cookies (nextjs) |
+| `IP_HASH_SALT` | 32 hex | `sha256(ip + salt)` — 152-ФЗ/GDPR compliance |
+| `S3_ACCESS_KEY` | 20 hex | App-user MinIO (limited policy) |
+| `S3_SECRET_KEY` | 40 hex | App-user MinIO |
 
-Пароль SSH сохранён у пользователя. Расширить доступ через `authorized_keys` в проде.
+`NEXT_PUBLIC_SITE_URL`, `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET` — заданы прямо в docker-compose.yml как строки (не секреты).
 
-### Директория
+---
 
-Всё в `/opt/gta6/`:
+## VPS · директория `/opt/gta6/`
 
 ```
 /opt/gta6/
-├── .env                    # POSTGRES_PASSWORD, MINIO_ROOT_USER, MINIO_ROOT_PASSWORD (chmod 600)
-├── docker-compose.yml      # postgres + minio + caddy
-├── Caddyfile               # reverse-proxy config
-├── backup.sh               # cron скрипт
-├── pg-data/                # Postgres volume (bind mount)
-├── pg-ssl/
-│   ├── server.crt          # self-signed для SSL Postgres
-│   └── server.key          # chown 999:999, chmod 600
-├── minio-data/             # MinIO volume
-├── caddy-data/             # Caddy: сохраняет Let's Encrypt certs
-├── caddy-config/
+├── .env                    # секреты (chmod 600, gitignored на VPS)
+├── docker-compose.yml      # postgres + minio + nextjs + watchtower + caddy
+├── Caddyfile               # reverse-proxy routing
+├── backup.sh               # daily pg_dump
+├── pg-data/                # Postgres volume
+├── pg-ssl/                 # self-signed SSL cert (chown 999:999)
+├── minio-data/             # MinIO объекты
+├── caddy-data/             # Let's Encrypt certs, state
+├── caddy-config/           # Caddy runtime config
 └── backups/                # gta6_YYYYMMDD-HHMMSS.dump + backup.log
 ```
 
 ### Postgres 16 в Docker
 
-- Порт наружу: **5433** (внутри контейнера 5432)
-- SSL: self-signed, `sslmode=require&uselibpqcompat=true` в clientстроке
+- Порт наружу: **5433** (внутри `postgres:5432`)
+- SSL: self-signed, у клиентов `sslmode=require&uselibpqcompat=true`
 - Auth: `scram-sha-256`
-- User: `gta6`, БД: `gta6_blog`, пароль в `.env` (48 hex chars)
-- Config: `max_connections=200`, `shared_buffers=256MB`, `log_min_duration_statement=1000`
+- Docker-имя: `gta6-postgres`
+- **nextjs подключается по internal сети:** `postgresql://gta6:PASS@postgres:5432/gta6_blog?...`
+- Внешний доступ (напр. для миграций с моего Mac):
+  ```bash
+  psql "sslmode=require host=5.180.172.132 port=5433 user=gta6 dbname=gta6_blog"
+  ```
 
-**Подключение снаружи:**
+### Next.js в Docker
+
+- Docker image: `ghcr.io/fullstakilla/gta6blog:latest`
+- Build: multi-stage Dockerfile в `frontend/Dockerfile` (deps → builder → runner)
+- Порт: **3000** (только внутри Docker network, наружу через Caddy)
+- Standalone Next.js — минимальный runtime, ~360 MB image
+- Non-root user (uid 1001)
+- Healthcheck: `wget http://localhost:3000/` каждые 30 сек
+- Метки: `com.centurylinklabs.watchtower.enable=true` — позволяет Watchtower обновлять
+
+### MinIO S3
+
+- Bucket: **`gta6-uploads`** (anonymous download policy)
+- App user с policy `gta6-uploads-rw` (RW только на bucket)
+- Root user `gta6admin` — для admin через `mc`
+- Наружу закрыт (доступ только через Caddy)
+
+**Полезные команды:**
 ```bash
-psql "sslmode=require host=5.180.172.132 port=5433 user=gta6 dbname=gta6_blog"
-# пароль — из /opt/gta6/.env
-```
-
-### MinIO — S3-совместимое хранилище
-
-- Bucket: **`gta6-uploads`** (anonymous download policy — картинки публичные)
-- App user с policy `gta6-uploads-rw` (RW только на этот bucket)
-- Root user `gta6admin` — для admin-операций через `mc`
-
-**Полезные команды MinIO:**
-```bash
-# alias уже настроен
 docker exec gta6-minio mc ls local/gta6-uploads/
 docker exec gta6-minio mc du local/gta6-uploads/
-docker exec gta6-minio mc rm --recursive --force local/gta6-uploads/2026-09/
 docker exec gta6-minio mc admin info local
 ```
 
-**MinIO console** доступ через SSH-туннель:
+**Console** через SSH-туннель:
 ```bash
 ssh -L 9001:localhost:9001 root@5.180.172.132
-# затем http://localhost:9001 (gta6admin / см. /opt/gta6/.env)
+# затем http://localhost:9001 (gta6admin / из /opt/gta6/.env)
 ```
 
-### Caddy reverse proxy
+### Caddy
 
 Полный `/opt/gta6/Caddyfile`:
 
@@ -224,25 +205,18 @@ gta6blog.ru, www.gta6blog.ru {
     @www host www.gta6blog.ru
     redir @www https://gta6blog.ru{uri} 308
 
-    reverse_proxy https://gta6blog.vercel.app {
-        header_up Host gta6blog.vercel.app    # Vercel мапит по своему домену
-        header_up X-Forwarded-Host {host}     # оригинальный host для приложения
-        transport http {
-            tls_server_name gta6blog.vercel.app  # SNI для Vercel edge
-        }
-    }
+    reverse_proxy nextjs:3000
 }
 ```
 
 **Ключевые моменты:**
-- **Один Caddyfile — два независимых блока** (MinIO и сайт).
-- **Host rewrite для Vercel** — критично. Если оставить `Host: gta6blog.ru` и не привязать домен в Vercel Domains, Vercel вернёт 403 «Forbidden».
-- **www → apex 308** — SEO-хорошая практика (склеивает вес поисковых сигналов на один домен).
-- **TLS Server Name** — при исходящем TLS в Vercel обязательно `gta6blog.vercel.app` (Vercel маршрутизирует по SNI).
-- **HTTP/3 + QUIC** — включаются автоматически, дают быструю загрузку.
-- **Cert Let's Encrypt** — выпускается автоматически при первом HTTPS-запросе через HTTP-01 или TLS-ALPN-01 challenge. Обновление за 30 дней до истечения.
+- Проксирование к `nextjs:3000` — по имени Docker-сервиса (внутренний DNS Compose)
+- Никакого `header_up Host` или `tls_server_name` не нужно — nextjs работает прозрачно
+- www → apex 308 — SEO-хорошая практика
+- HTTP/3 + QUIC — автомат
+- Cert Let's Encrypt — при первом HTTPS-запросе через HTTP-01 или TLS-ALPN-01
 
-**Reload после правок:**
+**Reload:**
 ```bash
 docker exec gta6-caddy caddy reload --config /etc/caddy/Caddyfile
 ```
@@ -252,7 +226,20 @@ docker exec gta6-caddy caddy reload --config /etc/caddy/Caddyfile
 docker logs gta6-caddy 2>&1 | tail -50
 ```
 
-Файлы сертификатов и state — в volume `./caddy-data/` (пережил рестарт контейнера).
+### Watchtower
+
+- Poll interval: **5 минут**
+- `--cleanup` — удаляет старые образы после апдейта
+- `--label-enable` — обновляет только контейнеры с `com.centurylinklabs.watchtower.enable=true`
+- Читает `/root/.docker/config.json` для GHCR-авторизации (mounted read-only)
+- Логи: `docker logs gta6-watchtower`
+
+**Форсировать проверку немедленно** (не ждать 5 мин):
+```bash
+docker exec gta6-watchtower /watchtower --run-once --label-enable
+# или проще:
+docker compose pull nextjs && docker compose up -d nextjs
+```
 
 ### Firewall (UFW)
 
@@ -261,32 +248,23 @@ Status: active
 22/tcp      ALLOW   Anywhere      # SSH
 80/tcp      ALLOW   Anywhere      # Caddy HTTP (для Let's Encrypt challenge)
 443/tcp     ALLOW   Anywhere      # Caddy HTTPS
-5433/tcp    ALLOW   Anywhere      # Postgres (⚠️ открыт всем — пароль защищает)
+5433/tcp    ALLOW   Anywhere      # Postgres (⚠️ открыт — пароль защищает)
 ```
-
-**Postgres открыт всему миру** — на Hobby-плане Vercel нет static outbound IP, поэтому whitelist невозможен. Защита:
-- 48-char пароль sha256-подписан
-- Обязательный TLS
-- (планируется) fail2ban на неудачные попытки
 
 ### Backup
 
 Cron: `0 3 * * * /opt/gta6/backup.sh`
 
 Что делает:
-1. `docker exec gta6-postgres pg_dump -U gta6 -d gta6_blog -F c > backups/gta6_STAMP.dump` (custom format)
+1. `docker exec gta6-postgres pg_dump -U gta6 -d gta6_blog -F c > backups/gta6_STAMP.dump`
 2. Ротация: оставляет последние 30 файлов
 
 Лог: `/opt/gta6/backups/backup.log`.
 
-**Что НЕ бэкапится:** MinIO-данные. При потере VPS теряются все загруженные обложки.
-Стратегия P1: rclone-синк `/opt/gta6/minio-data/` на внешнее хранилище (Backblaze B2, S3 Glacier).
+**Что НЕ бэкапится:** MinIO-данные. Планируется P1: rclone-синк `/opt/gta6/minio-data/` во внешнее хранилище.
 
-### Restore
-
+**Restore:**
 ```bash
-# на VPS
-cd /opt/gta6
 docker exec -i gta6-postgres pg_restore -U gta6 -d gta6_blog --clean --if-exists < backups/gta6_YYYYMMDD-HHMMSS.dump
 ```
 
@@ -294,105 +272,97 @@ docker exec -i gta6-postgres pg_restore -U gta6 -d gta6_blog --clean --if-exists
 
 ## Прод-миграции Prisma
 
-Из локальной машины (через удалённый DATABASE_URL):
+С локальной машины (через удалённый DATABASE_URL):
 
 ```bash
 cd frontend
-DATABASE_URL='<prod-url>' npx prisma migrate deploy
+DATABASE_URL='postgresql://gta6:PASS@5.180.172.132:5433/gta6_blog?sslmode=require&uselibpqcompat=true' npx prisma migrate deploy
 ```
 
-**НЕ использовать `prisma migrate dev`** в проде — она создаёт новые миграции и может сломать историю. `deploy` только применяет уже созданные.
+**НЕ использовать `prisma migrate dev`** в проде — создаёт новые миграции, ломает историю. `deploy` только применяет.
 
 **Стратегия деплоя новой миграции:**
-1. Локально `prisma migrate dev --name X` → миграция создана + применена локально
-2. Коммит + push
-3. Vercel деплой запускается **параллельно** — если код нового коммита использует новые колонки, а миграция ещё не применена в проде → 500-ошибки на кратком окне
-4. Из локальной машины сразу `DATABASE_URL='<prod>' npx prisma migrate deploy`
+1. Локально `prisma migrate dev --name X` → создаётся миграция + применена локально
+2. Коммит + push → GitHub Actions билдит новый Docker образ
+3. Из локальной машины сразу: `DATABASE_URL='<prod>' npx prisma migrate deploy`
+4. Watchtower через ~5 мин подхватит новый образ и рестартит nextjs
 
-Для безопасности: делать миграции **backward-compatible** (добавление колонок с default, отдельный релиз для удаления). Тогда порядок деплой→миграция не критичен.
+**Для безопасности:** делать миграции **backward-compatible** (adding columns, not dropping). Тогда порядок деплой→миграция не критичен.
 
 ---
 
 ## Troubleshooting
 
-### Vercel не деплоит: "commit author did not have contributing access"
+### GitHub Actions Docker build упал
 
-Проверить `git log --format='%an %ae'` — email автора должен быть привязан к GitHub-аккаунту `fullstakilla`.
-Fix: коммитить от `121338834+fullstakilla@users.noreply.github.com`.
+- Смотреть логи в `Actions` → workflow-run → «Build & push Docker image»
+- Обычно: opinionated npm-warning про allow-scripts (уже фикшено) или ошибки в `next build`
+- Локально проверить: `cd frontend && npm run build`
 
-### Prisma в Vercel не подключается: "self-signed certificate"
+### Watchtower не обновляет nextjs
 
-Проверить `DATABASE_URL` — там должен быть `&uselibpqcompat=true`.
+- `docker logs gta6-watchtower` — увидим последнюю проверку и почему не пуляет
+- Проверить что образ в GHCR обновился: `docker pull ghcr.io/fullstakilla/gta6blog:latest`
+- Проверить label на контейнере: `docker inspect gta6-nextjs | grep watchtower`
+- **Forced обновление:** `cd /opt/gta6 && docker compose pull nextjs && docker compose up -d nextjs`
+
+### nextjs не отвечает / 502 от Caddy
+
+- `docker ps` — `gta6-nextjs` должен быть `Up ... (healthy)`
+- Если `unhealthy` или падает: `docker logs gta6-nextjs 2>&1 | tail -50`
+- Обычные причины:
+  - Ошибка в env-переменных (missing IRON_SESSION_SECRET и т.п.)
+  - Postgres недоступен (проверить `docker ps` gta6-postgres)
+  - OOM — VPS 1.8GB тесно, `docker stats` покажет
+- Быстрый рестарт: `docker compose restart nextjs`
 
 ### Postgres: too many connections
 
-Vercel serverless создаёт новые инстансы под нагрузкой, каждый со своим пулом.
-- В `DATABASE_URL` увеличить `connection_limit=5` до `connection_limit=3`
-- Или в Postgres `max_connections=200` уже поднято
-
-**Долгосрочно:** PgBouncer перед Postgres (порт 6432 → маппится к 5432 контейнера).
+- В DATABASE_URL уменьшить `connection_limit=10` до `5`
+- В Postgres `max_connections=200` уже поднято через `command:` в compose
+- Долгосрочно: PgBouncer перед Postgres
 
 ### MinIO 400 или 403 при upload
 
-- Проверить `S3_ACCESS_KEY` / `S3_SECRET_KEY` в Vercel env
+- Проверить env `S3_ACCESS_KEY` / `S3_SECRET_KEY` в контейнере: `docker exec gta6-nextjs env | grep S3`
 - Проверить bucket существует: `docker exec gta6-minio mc ls local/`
-- Проверить policy у app-user: `docker exec gta6-minio mc admin user info local $KEY`
+- Проверить policy: `docker exec gta6-minio mc admin user info local $KEY`
 
 ### Картинка не открывается снаружи
 
-- Убедиться, что bucket с `anonymous download`: `docker exec gta6-minio mc anonymous list local/gta6-uploads`
+- Bucket с `anonymous download`: `docker exec gta6-minio mc anonymous list local/gta6-uploads`
 - Прямой URL: `https://gta6media.duckdns.org/gta6-uploads/YYYY-MM/hash.png`
 
 ### Caddy не может получить cert
 
-- Проверить UFW открывает 80/tcp (Let's Encrypt HTTP-01 challenge)
+- UFW разрешает 80/tcp (Let's Encrypt HTTP-01 challenge)
 - `docker logs gta6-caddy` — искать `challenge failed` / `certificate obtained`
-- DNS должен глобально резолвить в наш VPS: `dig +short gta6blog.ru @8.8.8.8` = 5.180.172.132
-- Если ошибка «tls: no application protocol» — значит LE резолвит домен ещё в старый IP (Vercel). Подождать 10-15 мин + `docker restart gta6-caddy`
-- Если ошибка «404 на /.well-known/acme-challenge» — тот же кэш DNS у LE
-- Caddy может переключиться на **staging** (`acme-staging-v02`) после нескольких неудач prod. Restart контейнера сбрасывает выбор CA — снова пробует production
+- DNS должен глобально резолвить: `dig +short gta6blog.ru @8.8.8.8` = 5.180.172.132
+- После правок DNS в reg.ru — подождать 15 мин + `docker restart gta6-caddy`
 
-### Клиент видит 403 Forbidden от gta6blog.ru
+### У клиента в РФ ERR_SSL_VERSION_OR_CIPHER_MISMATCH или ERR_TIMED_OUT
 
-Причина: Caddy отправил `Host: gta6blog.ru` на Vercel, но домен НЕ привязан в Vercel Domains → Vercel не знает какой проект серверить.
-
-Фикс:
-- Либо привязать `gta6blog.ru` в Vercel Domains (будет Invalid Configuration warning, но серверить будет)
-- **Либо переписать Host на `gta6blog.vercel.app` в Caddyfile** (рекомендую — чище):
-  ```
-  header_up Host gta6blog.vercel.app
-  ```
-
-### У клиента в РФ ERR_SSL_VERSION_OR_CIPHER_MISMATCH
-
-Обычно значит одно из:
-1. Локальный DNS-кэш держит старый Vercel IP. Fix: сменить DNS на 1.1.1.1 через `networksetup -setdnsservers "Wi-Fi" 1.1.1.1 8.8.8.8` + `killall -HUP mDNSResponder`
-2. Провайдер режет по DPI — это уже блокировка Vercel-диапазонов, ради этого мы и поставили proxy. Значит DNS ещё не прописал наш VPS.
-
-### У клиента ERR_TIMED_OUT
-
-TCP-подключение до нашего VPS не устанавливается. Причины:
-1. VPS упал — проверить `docker ps` на VPS
-2. Провайдер клиента заблокировал наш IP (редко)
-3. Firewall на VPS — проверить `ufw status`, порт 443/tcp должен быть ALLOW
+- Локальный DNS-кэш держит старый IP. Fix: `sudo networksetup -setdnsservers "Wi-Fi" 1.1.1.1 8.8.8.8` + `killall -HUP mDNSResponder`
+- В браузере — chrome://net-internals/#dns → Clear host cache
+- Проверить с телефона по 4G, из другой сети
 
 ---
 
 ## Оперативные ссылки
 
 - **Prod URL:** https://gta6blog.ru
-- **Admin:** https://gta6blog.ru/admin (`admin@gta6blog.ru` / см. `/opt/gta6/.env`)
-- **Vercel Dashboard:** https://vercel.com/fullstakilla/gta6blog
+- **Admin:** https://gta6blog.ru/admin (`admin@gta6blog.ru` / `dev` — сменить через seed при появлении реальных админов)
 - **GitHub:** https://github.com/fullstakilla/gta6blog
+- **GHCR image:** https://github.com/fullstakilla/gta6blog/pkgs/container/gta6blog
 - **MinIO endpoint (S3 API):** https://gta6media.duckdns.org
-- **DuckDNS panel:** https://www.duckdns.org/ (управление IP поддоменов)
+- **DuckDNS panel:** https://www.duckdns.org/
 - **Reg.ru DNS панель:** https://www.reg.ru/user/ → gta6blog.ru → DNS
 - **SSL Labs check:** https://www.ssllabs.com/ssltest/analyze.html?d=gta6blog.ru
 - **Работоспособность из разных стран:** https://check-host.net/check-http?host=gta6blog.ru
 
 ## Cross-references
 
-- Архитектурные решения → [decisions](../decisions/SKILL.md) (ADR-011+)
+- Архитектурные решения → [decisions](../decisions/SKILL.md) (ADR-011..016)
 - Схема БД → [data-model](../data-model/SKILL.md)
 - Server Actions / API → [api-contract](../api-contract/SKILL.md)
 - Роадмап → [../../ROADMAP.md](../../ROADMAP.md)

@@ -6,9 +6,9 @@
 
 **Обновлено:** 2026-09-06 · **Легенда:** ✅ сделано · 🚧 в работе · ⏳ ждёт · 🅿️ отложено · ❌ отброшено
 
-**Прогресс:** P0 — 5/5 ✅. P1 — всё закрыто. P2 — RSS + CI закрыты.
+**Прогресс:** P0 — 5/5 ✅. P1 — всё закрыто. P2 — RSS + CI закрыты. Плюс полный переезд с Vercel на self-hosted Docker.
 
-**🎉 MVP запущен:** https://gta6blog.ru (SSL A+, HTTPS через Caddy на VPS-прокси)
+**🎉 MVP запущен:** https://gta6blog.ru (SSL A+, self-hosted, работает у всех РФ-провайдеров)
 
 **Что дальше:** Яндекс.Метрика + Вебмастер + Google Search Console. После — fail2ban на Postgres + backup MinIO-данных.
 
@@ -64,14 +64,15 @@
   - [x] Инструкция клона + запуска (createdb, prisma migrate, seed, npm run dev)
   - [x] Плейсхолдеры для env-vars без секретов
 - [x] **Деплой** — MVP запущен на https://gta6blog.ru
-  - [x] Vercel Hobby (region fra1) для Next.js app
-  - [x] VPS (Ubuntu 24.04 @ 5.180.172.132) — Postgres 16 + MinIO + Caddy в Docker
-  - [x] TLS: Caddy Let's Encrypt для gta6blog.ru + www + MinIO (все A+)
+  - [x] VPS (Ubuntu 24.04 @ 5.180.172.132) — Postgres 16 + MinIO + Caddy + **Next.js** в Docker
+  - [x] Vercel был короткое время использован (removed 2026-09-06, см. [ADR-016](.claude/skills/decisions/SKILL.md))
+  - [x] TLS: Caddy Let's Encrypt для gta6blog.ru + www + MinIO (A+)
   - [x] Backup Postgres: cron 03:00, ротация 30 дней
-  - [x] Env: DATABASE_URL с `uselibpqcompat=true`, IRON_SESSION_SECRET, IP_HASH_SALT, S3_*, NEXT_PUBLIC_SITE_URL
+  - [x] Env: DATABASE_URL, IRON_SESSION_SECRET, IP_HASH_SALT, S3_* — в `/opt/gta6/.env`
   - [x] MinIO S3 upload — end-to-end проверено, картинки публично доступны
   - [x] Домен gta6blog.ru куплен на reg.ru, DNS настроен
-  - [x] Caddy-прокси перед Vercel — обход DPI-фильтров РФ-провайдеров ([ADR-014](.claude/skills/decisions/SKILL.md))
+  - [x] CI/CD через GitHub Actions → GHCR → Watchtower на VPS auto-pull
+  - [x] Работает у всех РФ-провайдеров (включая мобильных)
   - [ ] Яндекс.Метрика — код счётчика в root layout
   - [ ] Яндекс.Вебмастер — verify + submit sitemap
   - [ ] Google Search Console — verify + submit sitemap
