@@ -165,19 +165,29 @@ npm run lint    # ESLint
 
 ## Deploy
 
-**Live:** https://gta6blog.vercel.app
+**Live:** https://gta6blog.ru (SSL Labs A+)
 
 **Топология:**
+```
+Клиент → Caddy на VPS (Хельсинки, Let's Encrypt) → Vercel (fra1) → Next.js
+                        │
+                        ├─→ MinIO (S3 API, обложки статей)
+                        │
+                        └─→ Postgres 16 (Vercel-функции ходят напрямую)
+```
+
 - **Vercel Hobby** (region `fra1` Frankfurt) — Next.js app
 - **VPS** (5.180.172.132, Ubuntu 24.04) — Postgres 16 + MinIO + Caddy в Docker
+- **Reverse-proxy** через Caddy на VPS для клиентского трафика — обход DPI-фильтрации Vercel-IP у части РФ-провайдеров (см. [ADR-014](.claude/skills/decisions/SKILL.md))
 
 Подробнее: [.claude/skills/infrastructure/SKILL.md](.claude/skills/infrastructure/SKILL.md) — полная схема,
 env-переменные, backup/restore, troubleshooting.
-Архитектурные решения — [ADR-011, 012, 013](.claude/skills/decisions/SKILL.md).
+Архитектурные решения — [ADR-011..015](.claude/skills/decisions/SKILL.md).
 
 ### Deploy pipeline
 
 - Push в `main` → GitHub Actions CI (lint + build) → Vercel auto-deploy
+- **Commit author должен быть `121338834+fullstakilla@users.noreply.github.com`** (Vercel Hobby ограничение)
 - Прод-миграции: локально `DATABASE_URL='<prod>' npx prisma migrate deploy`
 - Backup Postgres: cron `0 3 * * *` на VPS в `/opt/gta6/backups/`, ротация 30 дней
 

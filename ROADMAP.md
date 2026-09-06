@@ -6,11 +6,11 @@
 
 **Обновлено:** 2026-09-06 · **Легенда:** ✅ сделано · 🚧 в работе · ⏳ ждёт · 🅿️ отложено · ❌ отброшено
 
-**Прогресс:** P0 — 5/5 ✅. P1 — всё закрыто (Метрика/GSC — вместе с покупкой домена). P2 — RSS + CI закрыты.
+**Прогресс:** P0 — 5/5 ✅. P1 — всё закрыто. P2 — RSS + CI закрыты.
 
-**🎉 MVP запущен:** https://gta6blog.vercel.app
+**🎉 MVP запущен:** https://gta6blog.ru (SSL A+, HTTPS через Caddy на VPS-прокси)
 
-**Что дальше:** покупка реального домена `gta6blog.ru` + подключение аналитики + мониторинг (fail2ban, uptime).
+**Что дальше:** Яндекс.Метрика + Вебмастер + Google Search Console. После — fail2ban на Postgres + backup MinIO-данных.
 
 ---
 
@@ -63,17 +63,21 @@
 - [x] **`README.md` + `frontend/.env.example`**
   - [x] Инструкция клона + запуска (createdb, prisma migrate, seed, npm run dev)
   - [x] Плейсхолдеры для env-vars без секретов
-- [x] **Деплой** — MVP запущен
+- [x] **Деплой** — MVP запущен на https://gta6blog.ru
   - [x] Vercel Hobby (region fra1) для Next.js app
   - [x] VPS (Ubuntu 24.04 @ 5.180.172.132) — Postgres 16 + MinIO + Caddy в Docker
-  - [x] TLS: Vercel auto + Caddy Let's Encrypt для MinIO
+  - [x] TLS: Caddy Let's Encrypt для gta6blog.ru + www + MinIO (все A+)
   - [x] Backup Postgres: cron 03:00, ротация 30 дней
-  - [x] Env: DATABASE_URL с `uselibpqcompat=true`, IRON_SESSION_SECRET, IP_HASH_SALT, S3_*
+  - [x] Env: DATABASE_URL с `uselibpqcompat=true`, IRON_SESSION_SECRET, IP_HASH_SALT, S3_*, NEXT_PUBLIC_SITE_URL
   - [x] MinIO S3 upload — end-to-end проверено, картинки публично доступны
-  - [ ] Реальный домен `gta6blog.ru` (в процессе покупки)
-  - [ ] Яндекс.Метрика, Вебмастер, GSC (нужен реальный домен + HTTPS)
+  - [x] Домен gta6blog.ru куплен на reg.ru, DNS настроен
+  - [x] Caddy-прокси перед Vercel — обход DPI-фильтров РФ-провайдеров ([ADR-014](.claude/skills/decisions/SKILL.md))
+  - [ ] Яндекс.Метрика — код счётчика в root layout
+  - [ ] Яндекс.Вебмастер — verify + submit sitemap
+  - [ ] Google Search Console — verify + submit sitemap
   - [ ] Sentry для отслеживания ошибок в проде
   - [ ] Backup MinIO-данных (rclone в внешнее хранилище)
+  - [ ] fail2ban на неудачные попытки авторизации Postgres
 
 ---
 

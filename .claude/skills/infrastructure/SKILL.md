@@ -5,53 +5,93 @@ description: Прод-инфраструктура GTA6·БЛОГ — где ч�
 
 # Инфраструктура GTA6·БЛОГ
 
-**Гибридная схема:** веб-приложение на Vercel (serverless), данные и медиа на своём VPS.
+**Гибридная схема:** веб-приложение на Vercel (serverless), данные и медиа на своём VPS. Клиентский трафик идёт через Caddy-прокси на VPS (обход блокировки Vercel-IP в РФ).
 
 ## Топология
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  Vercel (Hobby, region: fra1 Frankfurt)                        │
-│  ├─ Next.js 16 app из репы fullstakilla/gta6blog               │
-│  ├─ Автодеплой на push в main                                  │
-│  ├─ Прод-URL: https://gta6blog.vercel.app                      │
-│  └─ Env-vars: DATABASE_URL, IRON_SESSION_SECRET, IP_HASH_SALT,│
-│              NEXT_PUBLIC_SITE_URL, S3_*                        │
-└──────────────────────────┬─────────────────────────────────────┘
-                           │
-              HTTPS (TLS) │ через открытый интернет
-                           │
-┌──────────────────────────▼─────────────────────────────────────┐
-│  VPS (Ubuntu 24.04, 2 vCPU, 1.8 GB RAM, 58 GB, IP: 5.180.172.132)
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │ Docker Compose stack (/opt/gta6/)                        │  │
-│  │                                                          │  │
-│  │  ┌─────────────┐   ┌──────────────┐   ┌───────────────┐│  │
-│  │  │  Postgres   │   │  MinIO       │   │  Caddy         ││  │
-│  │  │  16         │   │  S3-compat   │◄──│  reverse proxy ││  │
-│  │  │  :5433      │   │  :9000       │   │  :80, :443     ││  │
-│  │  │  (SSL)      │   │  (private)   │   │  Let's Encrypt ││  │
-│  │  └─────────────┘   └──────────────┘   └───────┬────────┘│  │
-│  │                                                │          │  │
-│  └────────────────────────────────────────────────┼──────────┘  │
-│                                                   │             │
-│  UFW firewall: allow 22, 80, 443, 5433            │             │
-│  Cron: /opt/gta6/backup.sh @ 03:00 daily          │             │
-└───────────────────────────────────────────────────┼─────────────┘
-                                                    │
-              https://gta6media.duckdns.org         │
-              → DNS: DuckDNS → 5.180.172.132       │
+┌────────────────────────────────────────────────────────┐
+│           КЛИЕНТ (браузер)                             │
+│           https://gta6blog.ru                          │
+│           DNS: gta6blog.ru → 5.180.172.132             │
+└─────────────────────┬──────────────────────────────────┘
+                      │ HTTPS
+                      ▼
+┌────────────────────────────────────────────────────────┐
+│  VPS (Ubuntu 24.04, 2 vCPU, 1.8 GB, IP: 5.180.172.132) │
+│                                                         │
+│  ┌────────────────────────────────────────────────┐   │
+│  │ Caddy (reverse proxy) :80, :443                │   │
+│  │  - TLS termination (Let's Encrypt, A+ рейтинг) │   │
+│  │  - HTTP → HTTPS auto-redirect                  │   │
+│  │  - www.gta6blog.ru → 308 → gta6blog.ru         │   │
+│  │  - HTTP/3 + QUIC + Post-Quantum Crypto         │   │
+│  │                                                 │   │
+│  │  gta6blog.ru      → proxy → gta6blog.vercel.app│   │
+│  │  gta6media...     → proxy → minio:9000          │   │
+│  └───────┬──────────────────────────┬─────────────┘   │
+│          │                          │                  │
+│          │                          ▼                  │
+│          │                ┌─────────────────┐          │
+│          │                │  MinIO :9000    │          │
+│          │                │  S3-compatible  │          │
+│          │                │  bucket:        │          │
+│          │                │  gta6-uploads   │          │
+│          │                └─────────────────┘          │
+│          │                                             │
+│          │  ┌─────────────────────────────────────┐   │
+│          │  │  Postgres 16 :5433                  │   │
+│          │  │  SSL, scram-sha-256, port открыт    │   │
+│          │  │  вовне для Vercel-функций           │   │
+│          │  └───────────────┬─────────────────────┘   │
+│          │                  │                          │
+│  UFW firewall: 22, 80, 443, 5433                       │
+│  Cron: pg_dump 03:00 daily → /opt/gta6/backups/        │
+└──────────┼──────────────────┼──────────────────────────┘
+           │                  │
+           │ HTTPS (SNI+Host  │ TCP + TLS (Prisma pg-adapter)
+           │  = .vercel.app)  │
+           ▼                  ▼
+┌────────────────────────────────────────────────────────┐
+│  Vercel (Hobby, region: fra1 Frankfurt)                │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │  Next.js 16 app                                  │   │
+│  │  ├─ RSC + Server Actions + Route Handlers        │   │
+│  │  ├─ Auto-deploy on push to main                  │   │
+│  │  ├─ Vercel URL: https://gta6blog.vercel.app      │   │
+│  │  └─ Читает Postgres на VPS через открытый интернет│  │
+│  │      (DATABASE_URL с sslmode=require)             │  │
+│  └─────────────────────────────────────────────────┘   │
+└────────────────────────────────────────────────────────┘
 ```
+
+**Ключевой момент:** клиенты **не ходят напрямую на Vercel**. Все запросы проходят через VPS-прокси. Это обход РКН-фильтров Vercel-диапазонов (см. ADR-014).
+
+**Обратный маршрут (Vercel → БД):** Vercel-функции ходят напрямую к Postgres на VPS через открытый интернет. Никакого прокси между Next.js runtime и Postgres нет.
 
 ## Домены
 
-| Хост | Назначение | Провайдер | TLS |
-|---|---|---|---|
-| `gta6blog.vercel.app` | Публичный сайт + админка | Vercel | автоматически |
-| `gta6media.duckdns.org` | MinIO (S3-endpoint для картинок) | DuckDNS (free) | Caddy + Let's Encrypt |
-| `trainlogweb.duckdns.org` | (наследие) — не используется в GTA6 | DuckDNS | — |
+| Хост | Назначение | Провайдер | DNS указывает на | TLS |
+|---|---|---|---|---|
+| `gta6blog.ru` | Основной публичный домен | reg.ru | 5.180.172.132 (VPS) | Caddy + Let's Encrypt (A+) |
+| `www.gta6blog.ru` | 308 redirect → apex | reg.ru | 5.180.172.132 (VPS) | Caddy + Let's Encrypt |
+| `gta6blog.vercel.app` | Vercel origin (для Caddy proxy) | Vercel | Vercel edge | Vercel auto |
+| `gta6media.duckdns.org` | MinIO S3-endpoint | DuckDNS (free) | 5.180.172.132 (VPS) | Caddy + Let's Encrypt |
 
-Домен `gta6blog.ru` — планируется купить и переключить в Vercel Settings → Domains + там же обновить `NEXT_PUBLIC_SITE_URL`.
+**DNS-записи на reg.ru для `gta6blog.ru`:**
+
+```
+A       @       5.180.172.132
+A       www     5.180.172.132
+```
+
+**НЕ указывать на Vercel IP** — тогда клиенты в РФ будут получать ERR_SSL_VERSION_OR_CIPHER_MISMATCH из-за DPI-фильтров провайдеров.
+
+### Vercel Domains — важный нюанс
+
+В Vercel Dashboard → Settings → Domains нужно **держать только `gta6blog.vercel.app`**. Домен `gta6blog.ru` **не должен быть привязан к проекту в Vercel Domains** — иначе Vercel будет ожидать что DNS указывает на его IP, а он указывает на нас → возникает конфликт (Vercel то ругается «Invalid Configuration», то серверит 403).
+
+Caddy подменяет заголовок `Host: gta6blog.vercel.app` при проксировании — Vercel маршрутизирует по своему домену как обычно, клиент видит `gta6blog.ru` в URL благодаря `NEXT_PUBLIC_SITE_URL`.
 
 ## Vercel
 
@@ -79,7 +119,7 @@ description: Прод-инфраструктура GTA6·БЛОГ — где ч�
 
 | Var | Значение |
 |---|---|
-| `NEXT_PUBLIC_SITE_URL` | `https://gta6blog.vercel.app` (или прод-домен) |
+| `NEXT_PUBLIC_SITE_URL` | `https://gta6blog.ru` |
 | `S3_ENDPOINT` | `https://gta6media.duckdns.org` |
 | `S3_REGION` | `us-east-1` (MinIO использует как формальный tag) |
 | `S3_BUCKET` | `gta6-uploads` |
@@ -170,19 +210,49 @@ ssh -L 9001:localhost:9001 root@5.180.172.132
 
 ### Caddy reverse proxy
 
-`Caddyfile` — 5 строк:
+Полный `/opt/gta6/Caddyfile`:
+
 ```
 gta6media.duckdns.org {
     reverse_proxy minio:9000 {
         header_up Host {host}          # обязательно для SIGv4
-        header_up X-Forwarded-Proto {scheme}
     }
     request_body { max_size 10MB }
 }
+
+gta6blog.ru, www.gta6blog.ru {
+    @www host www.gta6blog.ru
+    redir @www https://gta6blog.ru{uri} 308
+
+    reverse_proxy https://gta6blog.vercel.app {
+        header_up Host gta6blog.vercel.app    # Vercel мапит по своему домену
+        header_up X-Forwarded-Host {host}     # оригинальный host для приложения
+        transport http {
+            tls_server_name gta6blog.vercel.app  # SNI для Vercel edge
+        }
+    }
+}
 ```
 
-- Автоматически получает и обновляет Let's Encrypt cert
-- Сертификаты сохраняются в volume `./caddy-data/` — при рестарте не выпускаются заново
+**Ключевые моменты:**
+- **Один Caddyfile — два независимых блока** (MinIO и сайт).
+- **Host rewrite для Vercel** — критично. Если оставить `Host: gta6blog.ru` и не привязать домен в Vercel Domains, Vercel вернёт 403 «Forbidden».
+- **www → apex 308** — SEO-хорошая практика (склеивает вес поисковых сигналов на один домен).
+- **TLS Server Name** — при исходящем TLS в Vercel обязательно `gta6blog.vercel.app` (Vercel маршрутизирует по SNI).
+- **HTTP/3 + QUIC** — включаются автоматически, дают быструю загрузку.
+- **Cert Let's Encrypt** — выпускается автоматически при первом HTTPS-запросе через HTTP-01 или TLS-ALPN-01 challenge. Обновление за 30 дней до истечения.
+
+**Reload после правок:**
+```bash
+docker exec gta6-caddy caddy reload --config /etc/caddy/Caddyfile
+```
+
+**Логи:**
+```bash
+docker logs gta6-caddy 2>&1 | tail -50
+```
+
+Файлы сертификатов и state — в volume `./caddy-data/` (пережил рестарт контейнера).
 
 ### Firewall (UFW)
 
@@ -277,18 +347,48 @@ Vercel serverless создаёт новые инстансы под нагруз
 
 - Проверить UFW открывает 80/tcp (Let's Encrypt HTTP-01 challenge)
 - `docker logs gta6-caddy` — искать `challenge failed` / `certificate obtained`
-- DNS должен резолвить: `dig +short gta6media.duckdns.org` = 5.180.172.132
+- DNS должен глобально резолвить в наш VPS: `dig +short gta6blog.ru @8.8.8.8` = 5.180.172.132
+- Если ошибка «tls: no application protocol» — значит LE резолвит домен ещё в старый IP (Vercel). Подождать 10-15 мин + `docker restart gta6-caddy`
+- Если ошибка «404 на /.well-known/acme-challenge» — тот же кэш DNS у LE
+- Caddy может переключиться на **staging** (`acme-staging-v02`) после нескольких неудач prod. Restart контейнера сбрасывает выбор CA — снова пробует production
+
+### Клиент видит 403 Forbidden от gta6blog.ru
+
+Причина: Caddy отправил `Host: gta6blog.ru` на Vercel, но домен НЕ привязан в Vercel Domains → Vercel не знает какой проект серверить.
+
+Фикс:
+- Либо привязать `gta6blog.ru` в Vercel Domains (будет Invalid Configuration warning, но серверить будет)
+- **Либо переписать Host на `gta6blog.vercel.app` в Caddyfile** (рекомендую — чище):
+  ```
+  header_up Host gta6blog.vercel.app
+  ```
+
+### У клиента в РФ ERR_SSL_VERSION_OR_CIPHER_MISMATCH
+
+Обычно значит одно из:
+1. Локальный DNS-кэш держит старый Vercel IP. Fix: сменить DNS на 1.1.1.1 через `networksetup -setdnsservers "Wi-Fi" 1.1.1.1 8.8.8.8` + `killall -HUP mDNSResponder`
+2. Провайдер режет по DPI — это уже блокировка Vercel-диапазонов, ради этого мы и поставили proxy. Значит DNS ещё не прописал наш VPS.
+
+### У клиента ERR_TIMED_OUT
+
+TCP-подключение до нашего VPS не устанавливается. Причины:
+1. VPS упал — проверить `docker ps` на VPS
+2. Провайдер клиента заблокировал наш IP (редко)
+3. Firewall на VPS — проверить `ufw status`, порт 443/tcp должен быть ALLOW
 
 ---
 
 ## Оперативные ссылки
 
+- **Prod URL:** https://gta6blog.ru
+- **Admin:** https://gta6blog.ru/admin (`admin@gta6blog.ru` / см. `/opt/gta6/.env`)
 - **Vercel Dashboard:** https://vercel.com/fullstakilla/gta6blog
 - **GitHub:** https://github.com/fullstakilla/gta6blog
-- **Prod URL:** https://gta6blog.vercel.app
-- **Admin:** https://gta6blog.vercel.app/admin (`admin@gta6blog.ru` / см. `/opt/gta6/.env`)
-- **MinIO endpoint:** https://gta6media.duckdns.org
+- **MinIO endpoint (S3 API):** https://gta6media.duckdns.org
 - **DuckDNS panel:** https://www.duckdns.org/ (управление IP поддоменов)
+- **Reg.ru DNS панель:** https://www.reg.ru/user/ → gta6blog.ru → DNS
+- **SSL Labs check:** https://www.ssllabs.com/ssltest/analyze.html?d=gta6blog.ru
+- **Работоспособность из разных стран:** https://check-host.net/check-http?host=gta6blog.ru
 
 ## Cross-references
 
