@@ -1,4 +1,13 @@
 import Link from "next/link";
+import { SITE_URL } from "@/lib/constants";
+
+const SOC_LINKS: { label: string; href: string }[] = [
+  { label: "TG", href: SITE_URL },
+  { label: "YT", href: SITE_URL },
+  { label: "X", href: SITE_URL },
+];
+
+const ONLINE_COUNT = 156;
 
 export function Footer() {
   return (
@@ -115,14 +124,14 @@ export function Footer() {
                   animation: "pulseDot 1.6s ease-in-out infinite",
                 }}
               />
-247 сейчас онлайн
+{ONLINE_COUNT} сейчас онлайн
             </span>
           </div>
           <div style={{ display: "flex", gap: 10 }}>
-            {["TG", "YT", "X"].map((s) => (
+            {SOC_LINKS.map((s) => (
               <a
-                key={s}
-                href="#"
+                key={s.label}
+                href={s.href}
                 style={{
                   width: 30,
                   height: 30,
@@ -135,7 +144,7 @@ export function Footer() {
                   color: "var(--color-muted)",
                 }}
               >
-                {s}
+                {s.label}
               </a>
             ))}
           </div>

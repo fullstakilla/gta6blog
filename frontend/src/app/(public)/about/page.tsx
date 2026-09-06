@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CONTACT_EMAIL, RELEASE_DATE_HUMAN } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "О проекте",
@@ -75,34 +76,38 @@ export default function AboutPage() {
           <li>Ежедневные новости — разборы трейлеров, утечки, слухи</li>
           <li>«Всё, что известно о GTA VI» — evergreen-гид, обновляется</li>
           <li>Галерея — скриншоты, концепты, трейлер-кадры</li>
-          <li>Обратный отсчёт до релиза 26 мая 2026</li>
+          <li>Обратный отсчёт до релиза {RELEASE_DATE_HUMAN}</li>
         </ul>
 
-        <h2
-          style={{
-            fontFamily: "var(--font-display)",
-            fontWeight: 700,
-            fontSize: 28,
-            letterSpacing: "-0.02em",
-            margin: "48px 0 16px",
-          }}
-        >
-          Контакты
-        </h2>
-        <p>
-          Пишите на{" "}
-          <a
-            href="mailto:hello@gta6blog.ru"
-            style={{
-              color: "var(--color-accent)",
-              textDecoration: "underline",
-              textUnderlineOffset: 3,
-            }}
-          >
-            hello@gta6blog.ru
-          </a>
-          . Инсайдам гарантируем анонимность.
-        </p>
+        {CONTACT_EMAIL && (
+          <>
+            <h2
+              style={{
+                fontFamily: "var(--font-display)",
+                fontWeight: 700,
+                fontSize: 28,
+                letterSpacing: "-0.02em",
+                margin: "48px 0 16px",
+              }}
+            >
+              Контакты
+            </h2>
+            <p>
+              Пишите на{" "}
+              <a
+                href={`mailto:${CONTACT_EMAIL}`}
+                style={{
+                  color: "var(--color-accent)",
+                  textDecoration: "underline",
+                  textUnderlineOffset: 3,
+                }}
+              >
+                {CONTACT_EMAIL}
+              </a>
+              . Инсайдам гарантируем анонимность.
+            </p>
+          </>
+        )}
 
         <p
           style={{

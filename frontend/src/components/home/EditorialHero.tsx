@@ -12,6 +12,7 @@ export interface EditorialHeroProps {
     coverImage: string | null;
     category: string;
     publishedAt: Date | string | null;
+    readingMinutes: number;
   } | null;
 }
 
@@ -30,7 +31,7 @@ export function EditorialHero({ hero }: EditorialHeroProps) {
             color: "var(--color-muted)",
           }}
         >
-          {"// "}ПОКА НЕТ ОПУБЛИКОВАННЫХ СТАТЕЙ — ЗАГЛЯНИ В <a href="/admin" style={{ color: "var(--color-accent)" }}>АДМИНКУ</a>
+          {"// "}ГОТОВИМ ПЕРВЫЕ МАТЕРИАЛЫ — ЗАГЛЯНИ ПОЗЖЕ
         </div>
       </section>
     );
@@ -74,7 +75,7 @@ export function EditorialHero({ hero }: EditorialHeroProps) {
               </>
             )}
             <span style={{ color: "var(--color-muted)" }}>·</span>
-            <span style={{ color: "var(--color-muted)" }}>5 МИН ЧТЕНИЯ</span>
+            <span style={{ color: "var(--color-muted)" }}>{hero.readingMinutes} МИН ЧТЕНИЯ</span>
           </div>
           <div>
             <h1
@@ -163,7 +164,7 @@ export function EditorialHero({ hero }: EditorialHeroProps) {
             color: "var(--color-muted)",
           }}
         >
-          {hero.coverImage ? (
+          {hero.coverImage && (
             <Image
               src={hero.coverImage}
               alt=""
@@ -172,10 +173,6 @@ export function EditorialHero({ hero }: EditorialHeroProps) {
               priority
               style={{ objectFit: "cover" }}
             />
-          ) : (
-            <span style={{ position: "relative", zIndex: 1 }}>
-              ОБЛОЖКА · НЕ ЗАГРУЖЕНА
-            </span>
           )}
         </div>
       </div>

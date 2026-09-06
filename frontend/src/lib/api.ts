@@ -1,5 +1,6 @@
 import "server-only";
 import { db } from "@/lib/db";
+import { readingMinutes } from "@/lib/constants";
 import type { ArticleTag } from "@/types/api";
 
 /**
@@ -24,6 +25,7 @@ export type HeroArticle = {
   coverImage: string | null;
   category: string;
   publishedAt: Date | null;
+  readingMinutes: number;
 };
 
 /**
@@ -32,7 +34,7 @@ export type HeroArticle = {
  *   2. Fallback — последняя опубликованная (published_at DESC).
  */
 export async function getHeroArticle(): Promise<HeroArticle | null> {
-  return safeDb(async () => {
+  const row = await safeDb(async () => {
     const featured = await db.article.findFirst({
       where: { isFeatured: true, status: "published" },
       select: heroSelect,
@@ -44,6 +46,9 @@ export async function getHeroArticle(): Promise<HeroArticle | null> {
       select: heroSelect,
     });
   }, null);
+  if (!row) return null;
+  const { content, ...rest } = row;
+  return { ...rest, readingMinutes: readingMinutes(content ?? "") };
 }
 
 const heroSelect = {
@@ -54,6 +59,7 @@ const heroSelect = {
   coverImage: true,
   category: true,
   publishedAt: true,
+  content: true,
 } as const;
 
 export type LatestListArticle = {
@@ -260,4 +266,34 @@ export async function listGalleryItems(limit?: number): Promise<GalleryItem[]> {
       }),
     [],
   );
+}
+
+export async function getSubscribersCount(): Promise<number> {
+  return safeDb(
+    () => db.subscriber.count({ where: { confirmed: true } }),
+    0,
+  );
+}
+
+export interface GuideStats {
+  facts: number;
+  leaks: number;
+  trailers: number;
+  updatedAt: Date | null;
+}
+
+export async function getGuideStats(): Promise<GuideStats> {
+  return safeDb(async () => {
+    const [facts, leaks, trailers, latest] = await Promise.all([
+      db.article.count({ where: { status: "published" } }),
+      db.article.count({ where: { status: "published", category: "LEAK" } }),
+      db.article.count({ where: { status: "published", category: "TRAILER" } }),
+      db.article.findFirst({
+        where: { status: "published" },
+        orderBy: { updatedAt: "desc" },
+        select: { updatedAt: true },
+      }),
+    ]);
+    return { facts, leaks, trailers, updatedAt: latest?.updatedAt ?? null };
+  }, { facts: 0, leaks: 0, trailers: 0, updatedAt: null });
 }
