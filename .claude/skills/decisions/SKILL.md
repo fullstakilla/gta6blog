@@ -208,3 +208,76 @@ description: ADR-лог принятых архитектурных и прод�
 При подключении Яндекс.Метрики / Google Analytics — банер получит третий режим и логику: подключать трекеры только при `mode === "all"`.
 
 **Cross-refs:** `site-map` (LS keys), `product`.
+
+---
+
+## ADR-011 · 2026-09-06 · Хостинг: Vercel + свой VPS (гибрид)
+
+**Контекст.** MVP-код готов, надо выбрать где хостить. Три варианта — Vercel полностью, self-host полностью, гибрид.
+
+**Решение.** Гибрид: **Vercel** для Next.js app (serverless в fra1 Frankfurt), **свой VPS** (Ubuntu 24.04, 2 vCPU, 1.8GB RAM, IP 5.180.172.132) для Postgres + MinIO + Caddy в Docker.
+
+**Почему.**
+- Vercel — родная платформа для Next.js, деплой на push, zero-ops, встроенный CDN.
+- Postgres на VPS = полный контроль над данными, нет vendor lock, легко бэкапить.
+- MinIO на VPS = не платим за S3 traffic, никакого cold-start для картинок.
+- РФ-риск Vercel-бан — данные не потеряем, если случится (VPS у нас).
+
+**Отклонённые.**
+- **Vercel всё (+ Vercel Postgres/Neon/Blob)** — платно за Postgres и Blob, привязка. Плюс не все Postgres-фичи доступны (partial index для `is_featured` работал бы).
+- **Self-host всё (Docker + nginx на VPS)** — 1.8GB RAM не потянет Next.js SSR под нагрузкой. Plus CI/CD и observability придётся строить с нуля.
+- **Railway / Fly.io** — платные, менее очевидная модель ценообразования, СНГ-платёжка нестабильна.
+
+**Последствия.**
+- **Латентность:** Vercel fra1 ↔ VPS в Хельсинки ~30-50мс — приемлемо. С iad1 (US East, дефолт) было бы 150-200мс.
+- **Postgres открыт всему интернету** — Vercel Hobby не даёт static outbound IP, whitelist невозможен. Защита: 48-char password, TLS обязателен, (планируется) fail2ban.
+- **Прод-миграции** идут не автоматически — надо руками `prisma migrate deploy` с локальной машины на прод-URL. Автоматизировать в CI позже.
+
+**Cross-refs:** `infrastructure` (полная схема), `api-contract`.
+
+---
+
+## ADR-012 · 2026-09-06 · Хранение медиа: MinIO на VPS, S3 API
+
+**Контекст.** Vercel serverless — файловая система read-only после деплоя, `public/uploads/` не переживёт первый rebuild. Нужен персистентный store для обложек и картинок галереи.
+
+**Решение.** **MinIO** в Docker на нашем VPS. S3-совместимый API. Экспонирован через `https://gta6media.duckdns.org` (Caddy + Let's Encrypt). Public bucket `gta6-uploads` для anonymous download.
+
+**Почему.**
+- Один VPS = один backup контур, никаких доп. расходов на S3 traffic.
+- Прямой AWS SDK — код `/api/admin/upload` уже совместим.
+- App-user с ограниченной policy (только `gta6-uploads` RW) — украденные ключи не дадут admin-доступа.
+
+**Отклонённые.**
+- **Vercel Blob** — работает из коробки, но платно за GB + traffic + мало контроля.
+- **Backblaze B2 / Cloudflare R2** — дёшево, но ещё одна учётка/платёжка + СНГ-нюансы.
+- **Локальная FS `public/uploads/`** — не работает на serverless.
+
+**Последствия.**
+- **MinIO данные не бэкапятся автоматически** — при потере VPS уйдут все обложки. Планируем rclone-синк на внешнее хранилище (P1).
+- **Public bucket** — любой знающий имя файла (24-hex hash) может скачать. Приемлемо для обложек статей.
+- **Caddy reverse-proxy** обязателен — MinIO не умеет сам Let's Encrypt правильно, и нам нужно `Host: gta6media.duckdns.org` для SIGv4.
+
+**Cross-refs:** `infrastructure`, `admin`.
+
+---
+
+## ADR-013 · 2026-09-06 · Vercel Hobby-план (не Pro)
+
+**Контекст.** MVP, надо минимизировать расходы.
+
+**Решение.** **Vercel Hobby** ($0). Ограничения приняты.
+
+**Ограничения Hobby, которые нас касаются:**
+- **Serverless function timeout 10s** — все наши эндпоинты укладываются, upload с 8MB тоже. Если появится media-processing — придётся апать на Pro (60s).
+- **Только один участник** — деплой запускается только с коммитов, автор которых привязан к нашему GitHub-аккаунту. Никаких `Co-Authored-By` trailer'ов.
+- **Нет static outbound IP** — Postgres firewall whitelist невозможен, полагаемся на пароль + TLS.
+- **Нет Team/Preview URLs с паролем** — preview деплои публичны.
+- **Не более 100GB bandwidth/мес** — при 10K уников/день с обложками должно хватать (~50-70GB/мес по прикидке).
+
+**Триггер апа на Pro ($20/мес):**
+- Уник в день > 5K и bandwidth > 60GB/мес.
+- Нужны background tasks > 10s.
+- Хочется static outbound IP для Postgres.
+
+**Cross-refs:** `infrastructure`.

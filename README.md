@@ -165,8 +165,21 @@ npm run lint    # ESLint
 
 ## Deploy
 
-Пока не задеплоено — см. секцию «Деплой» в [ROADMAP.md](ROADMAP.md).
-Планируем self-host Docker или Vercel (решение впереди).
+**Live:** https://gta6blog.vercel.app
+
+**Топология:**
+- **Vercel Hobby** (region `fra1` Frankfurt) — Next.js app
+- **VPS** (5.180.172.132, Ubuntu 24.04) — Postgres 16 + MinIO + Caddy в Docker
+
+Подробнее: [.claude/skills/infrastructure/SKILL.md](.claude/skills/infrastructure/SKILL.md) — полная схема,
+env-переменные, backup/restore, troubleshooting.
+Архитектурные решения — [ADR-011, 012, 013](.claude/skills/decisions/SKILL.md).
+
+### Deploy pipeline
+
+- Push в `main` → GitHub Actions CI (lint + build) → Vercel auto-deploy
+- Прод-миграции: локально `DATABASE_URL='<prod>' npx prisma migrate deploy`
+- Backup Postgres: cron `0 3 * * *` на VPS в `/opt/gta6/backups/`, ротация 30 дней
 
 ---
 
