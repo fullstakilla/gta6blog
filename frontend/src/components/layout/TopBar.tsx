@@ -1,7 +1,7 @@
 "use client";
 
 import { useCountdown } from "@/hooks/useCountdown";
-import { RELEASE_DATE } from "@/lib/constants";
+import { RELEASE_DATE, RELEASE_DATE_SHORT } from "@/lib/constants";
 
 export function TopBar() {
   const t = useCountdown(RELEASE_DATE);
@@ -38,7 +38,7 @@ export function TopBar() {
             ДО РЕЛИЗА
           </span>
           <span style={{ opacity: 0.5 }}>·</span>
-          <span>26.05.2026</span>
+          <span>{RELEASE_DATE_SHORT}</span>
         </div>
         <a
           href="#countdown"
