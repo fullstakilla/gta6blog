@@ -1,30 +1,42 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import MapContent from "@/content/guide/map";
+import CharactersContent from "@/content/guide/characters";
+import VehiclesContent from "@/content/guide/vehicles";
+import GameplayContent from "@/content/guide/gameplay";
 
 const SECTIONS: Record<
   string,
-  { title: string; tag: string; description: string }
+  { title: string; tag: string; description: string; body: () => React.ReactElement }
 > = {
   map: {
-    title: "Карта Vice City",
+    title: "Карта Vice City и штата Леонида",
     tag: "КАРТА",
-    description: "Порт-Гелена, болота, центр, побережье — что мы знаем.",
+    description:
+      "5 подтверждённых регионов открытого мира GTA VI — от порта Геллена до национального парка гор Калага.",
+    body: MapContent,
   },
   characters: {
-    title: "Персонажи",
+    title: "Персонажи GTA VI",
     tag: "ПЕРСОНАЖИ",
-    description: "Люсия, Джейсон, антагонисты, второстепенные.",
+    description:
+      "Люсия Каминос, Джейсон Дюваль и семь ключевых NPC. Полный разбор всего что известно.",
+    body: CharactersContent,
   },
   vehicles: {
-    title: "Транспорт",
+    title: "Транспорт GTA VI",
     tag: "ТРАНСПОРТ",
-    description: "Машины, мотоциклы, лодки, вертолёты.",
+    description:
+      "Машины, мотоциклы, лодки, вертолёты. Разбор классов транспорта показанных в трейлерах.",
+    body: VehiclesContent,
   },
   gameplay: {
-    title: "Геймплей",
+    title: "Геймплей GTA VI",
     tag: "ГЕЙМПЛЕЙ",
-    description: "Кооп, стрельба, вождение, ограбления.",
+    description:
+      "Кооп между Люсией и Джейсоном, Criminal Profile, Snapmatic, фитнес-система и свободные активности.",
+    body: GameplayContent,
   },
 };
 
@@ -52,10 +64,12 @@ export default async function GuideSectionPage({ params }: Props) {
   const s = SECTIONS[section];
   if (!s) notFound();
 
+  const Body = s.body;
+
   return (
     <section
       style={{
-        maxWidth: 800,
+        maxWidth: 760,
         margin: "0 auto",
         padding: "56px 24px 96px",
       }}
@@ -108,46 +122,8 @@ export default async function GuideSectionPage({ params }: Props) {
         {s.description}
       </p>
 
-      <div
-        style={{
-          marginTop: 64,
-          padding: 32,
-          border: "1px dashed var(--color-border-default)",
-          borderRadius: 2,
-          textAlign: "center",
-        }}
-      >
-        <div
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            letterSpacing: "0.25em",
-            color: "var(--color-accent)",
-            marginBottom: 12,
-          }}
-        >
-          {"// "}В РАБОТЕ
-        </div>
-        <p
-          style={{
-            fontFamily: "var(--font-body)",
-            fontSize: 15,
-            color: "var(--color-muted)",
-            maxWidth: "48ch",
-            margin: "0 auto",
-            lineHeight: 1.6,
-          }}
-        >
-          Собираем материалы. Следите за{" "}
-          <Link href="/blog" style={{ color: "var(--color-accent)" }}>
-            новостями
-          </Link>{" "}
-          или{" "}
-          <a href="#subscribe" style={{ color: "var(--color-accent)" }}>
-            подпишитесь на рассылку
-          </a>
-          , чтобы не пропустить.
-        </p>
+      <div style={{ marginTop: 24 }}>
+        <Body />
       </div>
     </section>
   );
