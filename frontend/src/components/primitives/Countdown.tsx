@@ -1,6 +1,7 @@
 "use client";
 
 import { CSSProperties } from "react";
+import { RELEASE_DATE_SHORT } from "@/lib/constants";
 
 interface CountdownProps {
   days: string;
@@ -59,7 +60,7 @@ export function Countdown({ days, hrs, mins, secs, flip }: CountdownProps) {
             paddingBottom: 8,
           }}
         >
-РЕЛИЗ — 26.05.2026 · PS5 / XBOX
+РЕЛИЗ — {RELEASE_DATE_SHORT} · PS5 / XBOX
         </span>
       </div>
       <div style={{ height: 1, background: "var(--color-border-default)" }} />

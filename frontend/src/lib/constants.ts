@@ -1,5 +1,6 @@
 export const RELEASE_DATE = "2026-11-19T00:00:00Z";
 export const RELEASE_DATE_HUMAN = "19 ноября 2026";
+export const RELEASE_DATE_SHORT = "19.11.2026";
 
 export const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://gta6blog.ru";
