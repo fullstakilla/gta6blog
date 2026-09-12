@@ -23,6 +23,7 @@ const ArticleInput = z.object({
     )
     .optional()
     .nullable(),
+  coverCaption: z.string().max(200).optional().nullable(),
   category: z.enum(CATEGORIES),
   tags: z.array(z.string()).default([]),
   status: z.enum(STATUSES).default("draft"),
@@ -42,6 +43,7 @@ function fromForm(fd: FormData) {
     excerpt: (fd.get("excerpt") as string) || null,
     content: String(fd.get("content") ?? ""),
     coverImage: (fd.get("coverImage") as string) || null,
+    coverCaption: (fd.get("coverCaption") as string) || null,
     category: fd.get("category") as (typeof CATEGORIES)[number],
     tags: String(fd.get("tags") ?? "")
       .split(",")

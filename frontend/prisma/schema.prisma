@@ -68,7 +68,8 @@ model Article {
   title       String
   excerpt     String?
   content     String
-  coverImage  String?       @map("cover_image")
+  coverImage   String?       @map("cover_image")
+  coverCaption String?       @map("cover_caption")
   category    ArticleTag
   tags        String[]      @default([])
   authorId    String?       @map("author_id") @db.Uuid

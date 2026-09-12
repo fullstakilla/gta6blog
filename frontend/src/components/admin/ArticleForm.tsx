@@ -59,6 +59,7 @@ export interface ArticleFormValues {
   excerpt?: string | null;
   content?: string;
   coverImage?: string | null;
+  coverCaption?: string | null;
   category?: (typeof CATEGORIES)[number];
   tags?: string[];
   status?: "draft" | "published" | "archived";
@@ -80,6 +81,7 @@ export function ArticleForm({ mode, initial = {}, currentFeaturedTitle }: Props)
   const [notice, setNotice] = useState<string | null>(null);
   const [coverUrl, setCoverUrl] = useState<string>(initial.coverImage ?? "");
   const [uploading, setUploading] = useState(false);
+  const [remoteUrl, setRemoteUrl] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   async function onFilePicked(e: React.ChangeEvent<HTMLInputElement>) {
@@ -102,6 +104,31 @@ export function ArticleForm({ mode, initial = {}, currentFeaturedTitle }: Props)
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  async function onUrlFetch() {
+    const url = remoteUrl.trim();
+    if (!url) return;
+    setError(null);
+    setUploading(true);
+    try {
+      const res = await fetch("/api/admin/upload-from-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        setError(data.message ?? data.code ?? "Не удалось скачать");
+      } else {
+        setCoverUrl(data.url);
+        setRemoteUrl("");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Ошибка");
+    } finally {
+      setUploading(false);
     }
   }
 
@@ -305,6 +332,45 @@ export function ArticleForm({ mode, initial = {}, currentFeaturedTitle }: Props)
               jpg/png/webp/avif · до 8 MB
             </span>
           </div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 8 }}>
+            <input
+              type="url"
+              placeholder="https://... — загрузить обложку из URL"
+              value={remoteUrl}
+              onChange={(e) => setRemoteUrl(e.target.value)}
+              disabled={uploading}
+              style={{ ...inputStyle, flex: 1, minWidth: 280, fontSize: 12 }}
+            />
+            <button
+              type="button"
+              onClick={onUrlFetch}
+              disabled={uploading || !remoteUrl.trim()}
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                letterSpacing: "0.14em",
+                background: "transparent",
+                color: "var(--color-accent)",
+                border: "1px solid var(--color-accent)",
+                borderRadius: 2,
+                padding: "10px 14px",
+                cursor: uploading || !remoteUrl.trim() ? "not-allowed" : "pointer",
+                opacity: uploading || !remoteUrl.trim() ? 0.5 : 1,
+              }}
+            >
+              [ЗАГРУЗИТЬ URL]
+            </button>
+          </div>
+        </Field>
+
+        <Field label="Подпись к обложке (источник, тайминг — необязательно)">
+          <input
+            name="coverCaption"
+            defaultValue={initial.coverCaption ?? ""}
+            placeholder="Кадр: GTA VI Trailer 2, 0:47"
+            maxLength={200}
+            style={inputStyle}
+          />
         </Field>
 
         <Field label="Excerpt (краткое описание, до 300 символов)">

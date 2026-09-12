@@ -23,6 +23,7 @@ export type HeroArticle = {
   title: string;
   excerpt: string | null;
   coverImage: string | null;
+  coverCaption: string | null;
   category: string;
   publishedAt: Date | null;
   readingMinutes: number;
@@ -57,6 +58,7 @@ const heroSelect = {
   title: true,
   excerpt: true,
   coverImage: true,
+  coverCaption: true,
   category: true,
   publishedAt: true,
   content: true,

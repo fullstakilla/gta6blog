@@ -30,6 +30,7 @@ export default async function EditArticlePage({
         excerpt: article.excerpt,
         content: article.content,
         coverImage: article.coverImage,
+        coverCaption: article.coverCaption,
         category: article.category,
         tags: article.tags,
         status: article.status,

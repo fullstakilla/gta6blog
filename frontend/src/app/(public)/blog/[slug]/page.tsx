@@ -11,6 +11,7 @@ import {
 import { CATEGORY_LABEL_UPPER } from "@/lib/i18n";
 import type { ArticleTag } from "@/types/api";
 import { StructuredData } from "@/components/seo/StructuredData";
+import { CategoryCover } from "@/components/seo/CategoryCover";
 import { articleJsonLd } from "@/lib/seo";
 import { ReactionBar } from "@/components/blog/ReactionBar";
 import { CommentSection } from "@/components/blog/CommentSection";
@@ -150,28 +151,45 @@ export default async function ArticlePage({ params }: Props) {
         </p>
       )}
 
-      {article.coverImage && (
+      <figure style={{ margin: "40px 0 0" }}>
         <div
           style={{
             position: "relative",
             width: "100%",
-            aspectRatio: "16 / 9",
-            marginTop: 40,
+            aspectRatio: article.coverImage ? "16 / 9" : "4 / 5",
             border: "1px solid var(--color-border-default)",
             borderRadius: 2,
             overflow: "hidden",
           }}
         >
-          <Image
-            src={article.coverImage}
-            alt=""
-            fill
-            sizes="(max-width: 800px) 100vw, 800px"
-            priority
-            style={{ objectFit: "cover" }}
-          />
+          {article.coverImage ? (
+            <Image
+              src={article.coverImage}
+              alt=""
+              fill
+              sizes="(max-width: 800px) 100vw, 800px"
+              priority
+              style={{ objectFit: "cover" }}
+            />
+          ) : (
+            <CategoryCover category={article.category} title={article.title} variant="hero" />
+          )}
         </div>
-      )}
+        {article.coverCaption && (
+          <figcaption
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              letterSpacing: "0.14em",
+              color: "var(--color-muted)",
+              marginTop: 10,
+              textAlign: "right",
+            }}
+          >
+            {article.coverCaption}
+          </figcaption>
+        )}
+      </figure>
 
       <div
         className="article-body"
