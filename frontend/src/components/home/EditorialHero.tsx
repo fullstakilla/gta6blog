@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { CATEGORY_LABEL_UPPER } from "@/lib/i18n";
+import { CategoryCover } from "@/components/seo/CategoryCover";
 import type { ArticleTag } from "@/types/api";
 
 export interface EditorialHeroProps {
@@ -10,6 +11,7 @@ export interface EditorialHeroProps {
     title: string;
     excerpt: string | null;
     coverImage: string | null;
+    coverCaption: string | null;
     category: string;
     publishedAt: Date | string | null;
     readingMinutes: number;
@@ -141,38 +143,40 @@ export function EditorialHero({ hero }: EditorialHeroProps) {
             </a>
           </div>
         </div>
-        <div
-          className="hero-cover"
-          style={{
-            position: "relative",
-            minHeight: 420,
-            border: "1px solid var(--color-border-default)",
-            overflow: "hidden",
-            background: hero.coverImage
-              ? "transparent"
-              : "var(--color-surface)",
-            backgroundImage: hero.coverImage
-              ? undefined
-              : "repeating-linear-gradient(135deg, rgba(255,255,255,0.05) 0 1px, transparent 1px 7px)",
-            display: "flex",
-            alignItems: "flex-end",
-            justifyContent: "flex-start",
-            padding: 16,
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.16em",
-            color: "var(--color-muted)",
-          }}
-        >
-          {hero.coverImage && (
-            <Image
-              src={hero.coverImage}
-              alt=""
-              fill
-              sizes="(max-width: 900px) 100vw, 480px"
-              priority
-              style={{ objectFit: "cover" }}
-            />
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div
+            className="hero-cover"
+            style={{
+              position: "relative",
+              minHeight: 420,
+              border: "1px solid var(--color-border-default)",
+              overflow: "hidden",
+            }}
+          >
+            {hero.coverImage ? (
+              <Image
+                src={hero.coverImage}
+                alt=""
+                fill
+                sizes="(max-width: 900px) 100vw, 480px"
+                priority
+                style={{ objectFit: "cover" }}
+              />
+            ) : (
+              <CategoryCover category={hero.category} title={hero.title} variant="hero" />
+            )}
+          </div>
+          {hero.coverCaption && (
+            <div
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                letterSpacing: "0.14em",
+                color: "var(--color-muted)",
+              }}
+            >
+              {hero.coverCaption}
+            </div>
           )}
         </div>
       </div>
