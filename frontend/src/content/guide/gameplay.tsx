@@ -1,4 +1,5 @@
-import { P, H2, H3, UL, LI, Callout, Meta, MetaItem } from "./shared";
+import Link from "next/link";
+import { P, H2, UL, LI, Callout, Meta, MetaItem } from "./shared";
 
 export default function GameplayContent() {
   return (
@@ -94,7 +95,7 @@ export default function GameplayContent() {
         <li style={LI}>Временная глубина — не сбрасывается через 15 секунд, а вычищается через время</li>
       </ul>
       <p style={P}>
-        Подробнее — <a href="/blog/criminal-profile-new-wanted-system" style={{ color: "var(--color-accent)" }}>отдельная статья про Criminal Profile</a>.
+        Подробнее — <Link href="/blog/criminal-profile-new-wanted-system" style={{ color: "var(--color-accent)" }}>отдельная статья про Criminal Profile</Link>.
       </p>
 
       <h2 style={H2}>Ограбления</h2>
