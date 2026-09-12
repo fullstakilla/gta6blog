@@ -22,6 +22,7 @@ export function GalleryAdminClient({ items }: { items: Item[] }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingUrl, setPendingUrl] = useState<string>("");
+  const [remoteUrl, setRemoteUrl] = useState<string>("");
   const [isPending, startTransition] = useTransition();
   const fileRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -44,6 +45,31 @@ export function GalleryAdminClient({ items }: { items: Item[] }) {
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  async function onUrlFetch() {
+    const url = remoteUrl.trim();
+    if (!url) return;
+    setError(null);
+    setUploading(true);
+    try {
+      const res = await fetch("/api/admin/upload-from-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        setError(data.message ?? data.code ?? "Не удалось скачать");
+      } else {
+        setPendingUrl(data.url);
+        setRemoteUrl("");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Ошибка");
+    } finally {
+      setUploading(false);
     }
   }
 
@@ -141,6 +167,36 @@ export function GalleryAdminClient({ items }: { items: Item[] }) {
               color: "var(--color-muted)",
             }}
           />
+          <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+            <input
+              type="url"
+              placeholder="https://... из URL"
+              value={remoteUrl}
+              onChange={(e) => setRemoteUrl(e.target.value)}
+              disabled={uploading}
+              style={{ ...inputStyle, fontSize: 12, padding: "8px 10px" }}
+            />
+            <button
+              type="button"
+              onClick={onUrlFetch}
+              disabled={uploading || !remoteUrl.trim()}
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                letterSpacing: "0.12em",
+                background: "transparent",
+                color: "var(--color-accent)",
+                border: "1px solid var(--color-accent)",
+                borderRadius: 2,
+                padding: "8px 10px",
+                cursor: uploading || !remoteUrl.trim() ? "not-allowed" : "pointer",
+                opacity: uploading || !remoteUrl.trim() ? 0.5 : 1,
+                whiteSpace: "nowrap",
+              }}
+            >
+              [URL]
+            </button>
+          </div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <input type="hidden" name="imageUrl" value={pendingUrl} />
